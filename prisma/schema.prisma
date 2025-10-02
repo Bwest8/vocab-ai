@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Vocabulary Set (e.g., Week 1, Week 2)
+model VocabSet {
+  id          String       @id @default(cuid())
+  name        String       // e.g., "Week 1", "Animals Theme"
+  description String?
+  grade       String?      // e.g., "3rd Grade"
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  words       VocabWord[]
+  
+  @@map("vocab_sets")
+}
+
+// Individual vocabulary word
+model VocabWord {
+  id              String            @id @default(cuid())
+  word            String
+  definition      String
+  pronunciation   String?           // Phonetic pronunciation guide
+  partOfSpeech    String?           // noun, verb, adjective, etc.
+  vocabSetId      String
+  vocabSet        VocabSet          @relation(fields: [vocabSetId], references: [id], onDelete: Cascade)
+  examples        VocabExample[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  progress        StudyProgress[]
+  
+  @@map("vocab_words")
+  @@index([vocabSetId])
+}
+
+// Example sentences with image descriptions for each word
+model VocabExample {
+  id                String     @id @default(cuid())
+  sentence          String
+  imageDescription  String     // Description for potential image generation
+  imageUrl          String?    // Generated image URL
+  wordId            String
+  word              VocabWord  @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  
+  @@map("vocab_examples")
+  @@index([wordId])
+}
+
+// Track student's progress on each word
+model StudyProgress {
+  id            String     @id @default(cuid())
+  wordId        String
+  word          VocabWord  @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  userId        String?    // Optional: for multi-user support later
+  correctCount  Int        @default(0)
+  incorrectCount Int       @default(0)
+  masteryLevel  Int        @default(0) // 0-5 scale
+  lastStudied   DateTime   @default(now())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  @@map("study_progress")
+  @@unique([wordId, userId])
+  @@index([wordId])
+  @@index([userId])
+}
