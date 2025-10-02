@@ -1,5 +1,10 @@
 import { google } from '@ai-sdk/google';
 import { generateObject } from 'ai';
+import { GoogleGenAI } from '@google/genai';
+import mime from 'mime';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import path from 'node:path';
 import { z } from 'zod';
 import type { GeminiVocabResponse } from './types';
 
@@ -9,12 +14,49 @@ import type { GeminiVocabResponse } from './types';
 
 // Initialize Gemini models for text/object generation (using AI SDK)
 export const geminiFlash = google('models/gemini-flash-latest');
-export const geminiPro = google('gemini-1.5-pro-latest');
+export const geminiImage = google('gemini-2.5-flash-image');
 
-// Configuration for image generation API (gemini-2.5-flash-image-preview)
-const IMAGE_API_KEY = ""; // Placeholder for Canvas environment key
-const IMAGE_MODEL = "gemini-2.5-flash-image-preview";
-const IMAGE_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_MODEL}:generateContent?key=${IMAGE_API_KEY}`;
+const GEMINI_IMAGE_MODEL_ID = 'gemini-2.5-flash-image';
+const GEMINI_IMAGE_BASE_PATH = path.join(process.cwd(), 'public', 'vocab-sets');
+
+let geminiImageClient: GoogleGenAI | null = null;
+
+function getGeminiImageClient(): GoogleGenAI {
+  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('Missing GOOGLE_GENERATIVE_AI_API_KEY environment variable for Gemini image generation.');
+  }
+
+  if (!geminiImageClient) {
+    geminiImageClient = new GoogleGenAI({ apiKey });
+  }
+
+  return geminiImageClient;
+}
+
+function sanitizeForFileName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'image';
+}
+
+export interface GenerateExampleImageParams {
+  vocabSetId: string;
+  exampleId: string;
+  word: string;
+  imageDescription: string;
+  aspectRatio?: '1:1' | '16:9' | '4:3' | '3:4';
+}
+
+export interface GeneratedImageResult {
+  publicUrl: string;
+  absolutePath: string;
+  fileName: string;
+  mimeType: string;
+}
 
 
 // =============================================================================
@@ -129,45 +171,89 @@ Guidelines:
 // =============================================================================
 
 /**
- * Generates an image from a detailed prompt using the gemini-2.5-flash-image-preview model.
- * @param prompt The detailed image generation prompt.
- * @returns A data URL string for the generated image (e.g., 'data:image/png;base64,...').
+ * Generates and persists an example illustration for a vocabulary word.
+ * Leverages the gemini-2.5-flash-image model, storing the resulting file under
+ * `public/vocab-sets/{setId}/` so it can be served statically by Next.js.
  */
-export async function generateImageFromPrompt(prompt: string): Promise<string> {
-    const payload = {
-        contents: [{
-            parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-            responseModalities: ['IMAGE']
-        },
-    };
 
-    const options: RequestInit = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    };
+export async function generateExampleImage({
+  vocabSetId,
+  exampleId,
+  word,
+  imageDescription,
+  aspectRatio = '1:1',
+}: GenerateExampleImageParams): Promise<GeneratedImageResult> {
+  if (!imageDescription?.trim()) {
+    throw new Error('Image description is required to generate an illustration.');
+  }
 
-    try {
-        const response = await exponentialBackoffFetch(IMAGE_API_URL, options);
-        const result = await response.json();
+  const client = getGeminiImageClient();
 
-        // Extract base64 image data
-        const base64Data = result?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData)?.inlineData?.data;
+  const enhancedPrompt = enhanceImagePrompt(imageDescription.trim(), word);
 
-        if (!base64Data) {
-            console.error("Image generation failed or returned no base64 data:", result);
-            throw new Error("Failed to generate image data.");
+  const stream = await client.models.generateContentStream({
+    model: GEMINI_IMAGE_MODEL_ID,
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: enhancedPrompt }],
+      },
+    ],
+    config: {
+      responseModalities: ['IMAGE'],
+      imageConfig: {
+        aspectRatio,
+      },
+    },
+  });
+
+  const imageParts: Array<{ buffer: Buffer; mimeType: string }> = [];
+
+  for await (const chunk of stream as AsyncIterable<unknown>) {
+    const candidates = (chunk as any)?.candidates ?? [];
+
+    for (const candidate of candidates) {
+      const parts = candidate?.content?.parts ?? [];
+
+      for (const part of parts) {
+        const inlineData = part?.inlineData;
+        if (inlineData?.data) {
+          const mimeType = inlineData?.mimeType ?? 'image/png';
+          imageParts.push({
+            buffer: Buffer.from(inlineData.data, 'base64'),
+            mimeType,
+          });
         }
-
-        return `data:image/png;base64,${base64Data}`;
-
-    } catch (error) {
-        // Throw an error that can be caught by the caller
-        throw new Error("Image generation failed.");
+      }
     }
+  }
+
+  if (imageParts.length === 0) {
+    throw new Error('Gemini did not return any inline image data.');
+  }
+
+  const { buffer, mimeType } = imageParts[0];
+  const extension = mime.getExtension(mimeType) ?? 'png';
+
+  const setFolder = path.join(GEMINI_IMAGE_BASE_PATH, vocabSetId);
+  await mkdir(setFolder, { recursive: true });
+
+  const safeWord = sanitizeForFileName(word);
+  const fileName = `${safeWord}-${exampleId}-${randomUUID()}.${extension}`;
+  const absolutePath = path.join(setFolder, fileName);
+
+  await writeFile(absolutePath, buffer);
+
+  const publicUrl = `/vocab-sets/${vocabSetId}/${fileName}`;
+
+  return {
+    publicUrl,
+    absolutePath,
+    fileName,
+    mimeType,
+  };
 }
+
 
 
 // =============================================================================

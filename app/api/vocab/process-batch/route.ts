@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { parseVocabText, processVocabularyWordWithExamples } from '@/lib/gemini';
+import { generateExampleImage, parseVocabText, processVocabularyWordWithExamples } from '@/lib/gemini';
 import type { ProcessVocabRequest, ProcessVocabResponse, GeminiVocabResponse } from '@/lib/types';
 
 /**
@@ -87,7 +87,34 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        processedWords.push(vocabWord);
+        const examplesWithImages = await Promise.all(
+          (vocabWord.examples ?? []).map(async (example) => {
+            try {
+              const generated = await generateExampleImage({
+                vocabSetId: vocabSet.id,
+                exampleId: example.id,
+                word: vocabWord.word,
+                imageDescription: example.imageDescription,
+              });
+
+              return await prisma.vocabExample.update({
+                where: { id: example.id },
+                data: { imageUrl: generated.publicUrl },
+              });
+            } catch (imageError) {
+              console.error(
+                `✗ Error generating image for example ${example.id} of word "${vocabWord.word}":`,
+                imageError
+              );
+              return example;
+            }
+          })
+        );
+
+        processedWords.push({
+          ...vocabWord,
+          examples: examplesWithImages,
+        });
         console.log(`✓ Successfully processed: ${word}`);
         
       } catch (error) {

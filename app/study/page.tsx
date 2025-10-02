@@ -36,6 +36,12 @@ export default function StudyPage() {
   const [showDetails, setShowDetails] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedExampleIndex, setSelectedExampleIndex] = useState(0);
+  const [generatingExampleIds, setGeneratingExampleIds] = useState<Set<string>>(() => new Set());
+  const [generationQueue, setGenerationQueue] = useState<string[]>([]);
+  const [imageGenerationError, setImageGenerationError] = useState<string | null>(null);
+  const [imageGenerationNotice, setImageGenerationNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -120,8 +126,43 @@ export default function StudyPage() {
   }, [selectedSetId]);
 
   const currentWord = words[currentIndex] ?? null;
+  const currentExamples = currentWord?.examples ?? [];
+  const totalExampleSlots = Math.max(currentExamples.length, 5);
+  const selectedExample = currentExamples[selectedExampleIndex] ?? null;
   const currentProgress = currentWord?.progress?.find((item) => item.userId == null) ?? null;
   const currentMastery = toMasteryLevel(currentProgress?.masteryLevel);
+  const isGeneratingSelectedExample = selectedExample ? generatingExampleIds.has(selectedExample.id) : false;
+  const currentQueueLabels = generationQueue.reduce<string[]>((acc, id) => {
+    const index = currentExamples.findIndex((example) => example.id === id);
+    if (index >= 0) {
+      acc.push(`Example ${index + 1}`);
+    }
+    return acc;
+  }, []);
+
+  useEffect(() => {
+    if (!currentWord) {
+      setShowImageModal(false);
+      setSelectedExampleIndex(0);
+      setImageGenerationError(null);
+      setImageGenerationNotice(null);
+      setGeneratingExampleIds(new Set());
+      setGenerationQueue([]);
+      return;
+    }
+
+    setSelectedExampleIndex(0);
+    setImageGenerationError(null);
+    setImageGenerationNotice(null);
+    setGeneratingExampleIds(new Set());
+    setGenerationQueue([]);
+  }, [currentWord?.id]);
+
+  useEffect(() => {
+    if (!showImageModal) return;
+    setImageGenerationError(null);
+    setImageGenerationNotice(null);
+  }, [selectedExampleIndex, showImageModal]);
 
   const masterySummary = useMemo(() => {
     const initial: Record<MasteryLevel, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
@@ -138,12 +179,14 @@ export default function StudyPage() {
     if (words.length === 0) return;
     setCurrentIndex((prev) => (prev + 1) % words.length);
     setShowDetails(false);
+    setShowImageModal(false);
   };
 
   const goToPreviousWord = () => {
     if (words.length === 0) return;
     setCurrentIndex((prev) => (prev - 1 + words.length) % words.length);
     setShowDetails(false);
+    setShowImageModal(false);
   };
 
   const handleProgress = async (isCorrect: boolean) => {
@@ -188,6 +231,85 @@ export default function StudyPage() {
       setErrorMessage(error instanceof Error ? error.message : "Unable to update progress");
     } finally {
       setIsUpdatingProgress(false);
+    }
+  };
+
+  const handleOpenImageModal = () => {
+    if (!currentWord || currentExamples.length === 0) return;
+    setSelectedExampleIndex(0);
+    setImageGenerationError(null);
+    setImageGenerationNotice(null);
+    setShowImageModal(true);
+  };
+
+  const handleCloseImageModal = () => {
+    setShowImageModal(false);
+    setImageGenerationError(null);
+    setImageGenerationNotice(null);
+  };
+
+  const handleGenerateImage = async () => {
+    if (!currentWord || !selectedExample) {
+      setImageGenerationError('Please select an example to generate an image.');
+      return;
+    }
+
+    const exampleId = selectedExample.id;
+    const slotIndex = currentExamples.findIndex((example) => example.id === exampleId);
+
+    setGeneratingExampleIds((prev) => {
+      const next = new Set(prev);
+      next.add(exampleId);
+      return next;
+    });
+
+    setGenerationQueue((prev) => (prev.includes(exampleId) ? prev : [...prev, exampleId]));
+
+    setImageGenerationError(null);
+    setImageGenerationNotice(null);
+
+    try {
+      const response = await fetch(
+        `/api/vocab/${currentWord.vocabSetId}/examples/${selectedExample.id}/generate-image`,
+        {
+          method: 'POST',
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error ?? 'Failed to generate image for this example.');
+      }
+
+      const updatedExample = data.example as NonNullable<WordWithRelations['examples']>[number];
+
+      setWords((prevWords) =>
+        prevWords.map((word) =>
+          word.id === currentWord.id
+            ? {
+                ...word,
+                examples: (word.examples ?? []).map((example) =>
+                  example.id === updatedExample.id ? { ...example, imageUrl: updatedExample.imageUrl } : example
+                ),
+              }
+            : word
+        )
+      );
+
+      setImageGenerationNotice(
+        slotIndex >= 0 ? `Image ready for example #${slotIndex + 1}!` : 'Image generated successfully!'
+      );
+    } catch (error) {
+      setImageGenerationError(error instanceof Error ? error.message : 'Unable to generate image for this example.');
+    } finally {
+      setGeneratingExampleIds((prev) => {
+        const next = new Set(prev);
+        next.delete(exampleId);
+        return next;
+      });
+
+      setGenerationQueue((prev) => prev.filter((id) => id !== exampleId));
     }
   };
 
@@ -342,12 +464,22 @@ export default function StudyPage() {
                           </span>
                         )}
                       </div>
-                      <button
-                        onClick={() => setShowDetails((prev) => !prev)}
-                        className="px-4 py-2 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow"
-                      >
-                        {showDetails ? "Hide Details" : "Show Answer"}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setShowDetails((prev) => !prev)}
+                          className="px-4 py-2 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow"
+                        >
+                          {showDetails ? "Hide Details" : "Show Answer"}
+                        </button>
+                        {currentExamples.length > 0 && (
+                          <button
+                            onClick={handleOpenImageModal}
+                            className="px-4 py-2 rounded-full bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors shadow"
+                          >
+                            Create Images
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className={`mt-8 space-y-6 transition-all duration-200 ${showDetails ? "opacity-100" : "opacity-0 h-0 overflow-hidden"}`}>
@@ -417,6 +549,119 @@ export default function StudyPage() {
           </main>
         </div>
       </div>
+
+      {showImageModal && currentWord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={handleCloseImageModal}
+            role="presentation"
+          />
+          <div className="relative z-10 w-full max-w-4xl rounded-3xl bg-white shadow-2xl p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Create Images for {currentWord.word}</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Select one of the five examples below to generate or refresh its illustration.
+                </p>
+              </div>
+              <button
+                onClick={handleCloseImageModal}
+                className="rounded-full bg-gray-100 hover:bg-gray-200 transition-colors w-10 h-10 flex items-center justify-center text-gray-600 text-lg"
+                aria-label="Close image generator"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="relative mt-6 border border-dashed border-purple-200 rounded-3xl bg-purple-50/40 overflow-hidden">
+              {selectedExample?.imageUrl ? (
+                <img
+                  src={selectedExample.imageUrl}
+                  alt={selectedExample.sentence}
+                  className="w-full max-h-[420px] object-contain bg-white"
+                />
+              ) : (
+                <div className="w-full max-h-[420px] flex items-center justify-center bg-white p-12 text-gray-400 text-sm">
+                  No image yet. Click "{selectedExample ? (selectedExample.imageUrl ? 'Regenerate' : 'Generate') : 'Generate'} Image" below to create one.
+                </div>
+              )}
+
+              {isGeneratingSelectedExample && (
+                <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center">
+                  <div className="h-14 w-14 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
+                </div>
+              )}
+            </div>
+
+            <p className="mt-4 text-center text-lg italic text-gray-700">
+              {selectedExample ? selectedExample.sentence : 'Select an example card below to begin.'}
+            </p>
+
+
+            {currentQueueLabels.length > 0 && (
+              <div className="mt-4 rounded-2xl bg-purple-50 border border-purple-200 px-4 py-3 text-sm text-purple-700">
+                <p className="font-semibold">Generating:</p>
+                <p>{currentQueueLabels.join(', ')}</p>
+              </div>
+            )}
+
+            <div className="mt-6 grid grid-cols-5 gap-4">
+              {Array.from({ length: totalExampleSlots }).map((_, idx) => {
+                const example = currentExamples[idx];
+                const isSelected = idx === selectedExampleIndex;
+                const isGenerating = example ? generatingExampleIds.has(example.id) : false;
+                const hasImage = Boolean(example?.imageUrl);
+
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      if (!example) return;
+                      setSelectedExampleIndex(idx);
+                      setImageGenerationError(null);
+                      setImageGenerationNotice(null);
+                    }}
+                    disabled={!example}
+                    className={`h-24 rounded-2xl border-2 flex flex-col items-center justify-center transition-all text-sm font-semibold ${
+                      isSelected
+                        ? 'border-purple-500 bg-purple-50 text-purple-600 shadow-md'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-purple-200 hover:bg-purple-50'
+                    } ${example ? '' : 'opacity-60 cursor-not-allowed'} ${isGenerating ? 'ring-2 ring-purple-300' : ''}`}
+                  >
+                    <span className="text-2xl font-bold">{idx + 1}</span>
+                    <span className="text-xs mt-1">
+                      {example ? (hasImage ? 'Image Ready' : 'No Image') : 'N/A'}
+                    </span>
+                    {isGenerating && (
+                      <span className="mt-2 h-4 w-4 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1 text-sm">
+                {imageGenerationError && <p className="text-red-600">{imageGenerationError}</p>}
+                {imageGenerationNotice && <p className="text-green-600">{imageGenerationNotice}</p>}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleGenerateImage}
+                  disabled={!selectedExample || isGeneratingSelectedExample}
+                  className="px-5 py-3 rounded-full bg-purple-600 text-white font-semibold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg flex items-center gap-2"
+                >
+                  {isGeneratingSelectedExample && (
+                    <span className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                  )}
+                  {selectedExample?.imageUrl ? 'Regenerate Image' : 'Generate Image'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

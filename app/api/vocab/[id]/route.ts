@@ -14,6 +14,7 @@ export async function GET(
         words: {
           include: {
             progress: true,
+            examples: true,
           },
         },
       },
