@@ -37,6 +37,7 @@ interface UseStudySessionResult {
   toggleDetails: () => void;
   goToNextWord: () => void;
   goToPreviousWord: () => void;
+  goToWord: (index: number) => void;
   handleProgress: (isCorrect: boolean) => Promise<void>;
   handleOpenImageModal: (exampleIndex?: number) => void;
   handleCloseImageModal: () => void;
@@ -193,6 +194,14 @@ export function useStudySession(): UseStudySessionResult {
 
   const toggleDetails = () => {
     setShowDetails((prev) => !prev);
+  };
+
+  const goToWord = (index: number) => {
+    if (words.length === 0) return;
+    const safeIndex = Math.max(0, Math.min(index, words.length - 1));
+    setCurrentIndex(safeIndex);
+    setShowDetails(false);
+    setShowImageModal(false);
   };
 
   const goToNextWord = () => {
@@ -372,6 +381,7 @@ export function useStudySession(): UseStudySessionResult {
     toggleDetails,
     goToNextWord,
     goToPreviousWord,
+    goToWord,
     handleProgress,
     handleOpenImageModal,
     handleCloseImageModal,

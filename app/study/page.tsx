@@ -33,6 +33,7 @@ export default function StudyPage() {
     toggleDetails,
     goToPreviousWord,
     goToNextWord,
+    goToWord,
     handleProgress,
     handleOpenImageModal,
     handleCloseImageModal,
@@ -41,8 +42,8 @@ export default function StudyPage() {
   } = useStudySession();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-100 py-6 px-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="relative min-h-[100svh] bg-gradient-to-br from-[#eef3ff] via-[#f8f2ff] to-[#ffe8f3] pb-28 pt-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 sm:px-6 lg:px-8">
         <StudyHeader
           vocabSets={vocabSets}
           selectedSetId={selectedSetId}
@@ -52,36 +53,41 @@ export default function StudyPage() {
         />
 
         {errorMessage && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-3 rounded-xl">
+          <div className="rounded-2xl border border-rose-200/70 bg-rose-50/80 px-6 py-4 text-rose-600 shadow-sm">
             {errorMessage}
           </div>
         )}
 
-        <div className="space-y-6">
-          <StudyFlashcard
-            words={words}
-            wordsState={wordsState}
-            selectedSetId={selectedSetId}
-            selectedSetName={selectedSetName}
-            currentIndex={currentIndex}
-            currentWord={currentWord}
-            showDetails={showDetails}
-            onToggleDetails={toggleDetails}
-            onOpenImageModal={handleOpenImageModal}
-            currentMastery={currentMastery}
-          />
+        <StudyFlashcard
+          words={words}
+          wordsState={wordsState}
+          selectedSetName={selectedSetName}
+          currentIndex={currentIndex}
+          currentWord={currentWord}
+          showDetails={showDetails}
+          onToggleDetails={toggleDetails}
+          onOpenImageModal={handleOpenImageModal}
+          currentMastery={currentMastery}
+          onPreviousWord={goToPreviousWord}
+          onNextWord={goToNextWord}
+          onSelectWord={goToWord}
+        />
+      </div>
 
-          {currentWord && (
+      {currentWord && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-4 sm:px-6">
+          <div className="pointer-events-auto mx-auto w-full max-w-3xl rounded-[28px] border border-white/60 bg-white/90 p-6 shadow-2xl shadow-indigo-200/50 backdrop-blur-xl">
             <StudyControls
               onPrevious={goToPreviousWord}
               onNext={goToNextWord}
               onMarkIncorrect={() => handleProgress(false)}
               onMarkCorrect={() => handleProgress(true)}
               disabled={isUpdatingProgress}
+              className="sm:items-center"
             />
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       <StudyImageModal
         open={showImageModal}

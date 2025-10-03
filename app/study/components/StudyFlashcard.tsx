@@ -1,10 +1,10 @@
 import { MASTERY_COLORS, MASTERY_LABELS, type MasteryLevel } from "@/lib/types";
+import { toMasteryLevel } from "@/lib/study/utils";
 import type { FetchState, WordWithRelations } from "@/lib/study/types";
 
 interface StudyFlashcardProps {
   words: WordWithRelations[];
   wordsState: FetchState;
-  selectedSetId: string;
   selectedSetName: string;
   currentIndex: number;
   currentWord: WordWithRelations | null;
@@ -12,12 +12,14 @@ interface StudyFlashcardProps {
   onToggleDetails: () => void;
   onOpenImageModal: (exampleIndex: number) => void;
   currentMastery: MasteryLevel;
+  onPreviousWord: () => void;
+  onNextWord: () => void;
+  onSelectWord: (index: number) => void;
 }
 
 export function StudyFlashcard({
   words,
   wordsState,
-  selectedSetId,
   selectedSetName,
   currentIndex,
   currentWord,
@@ -25,6 +27,9 @@ export function StudyFlashcard({
   onToggleDetails,
   onOpenImageModal,
   currentMastery,
+  onPreviousWord,
+  onNextWord,
+  onSelectWord,
 }: StudyFlashcardProps) {
   const currentExamples = currentWord?.examples ?? [];
 
@@ -54,7 +59,7 @@ export function StudyFlashcard({
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center text-gray-500">
           <p className="font-medium">Select a vocabulary set to begin studying.</p>
-          {selectedSetId && wordsState === "idle" && (
+          {selectedSetName && wordsState === "idle" && (
             <p className="mt-2 text-sm">This set doesn&apos;t have any words yet. Add some on the Create page.</p>
           )}
         </div>
@@ -63,109 +68,183 @@ export function StudyFlashcard({
   }
 
   return (
-    <>
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
-        <div>
-          <p className="text-sm text-gray-500 uppercase tracking-wide">{selectedSetName}</p>
-          <p className="text-xs text-gray-400">
+    <section className="relative flex flex-col gap-8 rounded-[32px] border border-white/60 bg-white/70 p-5 shadow-2xl shadow-indigo-100/40 backdrop-blur-xl md:p-8">
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          onClick={onPreviousWord}
+          className="order-2 flex h-12 w-12 items-center justify-center rounded-full border border-indigo-100 bg-white text-2xl text-indigo-500 shadow hover:border-indigo-200 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 sm:order-1"
+          aria-label="Go to previous word"
+        >
+          ‹
+        </button>
+
+        <div className="order-1 text-center sm:order-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-400">
+            {selectedSetName || "Vocabulary Set"}
+          </p>
+          <p className="mt-1 text-sm font-medium text-slate-500">
             Word {currentIndex + 1} of {words.length}
           </p>
         </div>
-        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${MASTERY_COLORS[currentMastery]}`}>
-          {MASTERY_LABELS[currentMastery]}
+
+        <div className="order-3 inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-inner shadow-white/60">
+          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${MASTERY_COLORS[currentMastery]}`}>
+            <span className="h-2 w-2 rounded-full bg-current opacity-70" />
+            {MASTERY_LABELS[currentMastery]}
+          </span>
         </div>
+
+        <button
+          type="button"
+          onClick={onNextWord}
+          className="order-4 flex h-12 w-12 items-center justify-center rounded-full border border-indigo-100 bg-white text-2xl text-indigo-500 shadow hover:border-indigo-200 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          aria-label="Go to next word"
+        >
+          ›
+        </button>
       </div>
 
-      <div className="flex-1">
-        <div className="bg-gradient-to-br from-indigo-100 via-white to-purple-100 rounded-3xl border border-indigo-100 p-8 shadow-inner">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-4xl font-bold text-gray-900">{currentWord.word}</h2>
-              {currentWord.pronunciation && (
-                <p className="text-lg text-gray-500 mt-1">{currentWord.pronunciation}</p>
-              )}
-              {currentWord.partOfSpeech && (
-                <span className="mt-3 inline-flex px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-sm font-medium">
-                  {currentWord.partOfSpeech}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={onToggleDetails}
-                className="px-4 py-2 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow"
-              >
-                {showDetails ? "Hide Details" : "Show Answer"}
-              </button>
-              {currentExamples.length > 0 && (
-                <button
-                  onClick={() => onOpenImageModal(0)}
-                  className="px-4 py-2 rounded-full bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors shadow"
-                >
-                  Create Images
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className={`mt-8 space-y-6 transition-all duration-200 ${showDetails ? "opacity-100" : "opacity-0 h-0 overflow-hidden"}`}>
-            <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Definition</h3>
-              <p className="text-lg text-gray-800 mt-2 leading-relaxed">{currentWord.definition}</p>
-            </div>
-
-            {currentExamples.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-4">Examples in Context</h3>
-                <ul className="space-y-4">
-                  {currentExamples.map((example, index) => (
-                    <li
-                      key={example.id}
-                      onClick={() => onOpenImageModal(index)}
-                      className="group relative overflow-hidden bg-gradient-to-br from-white via-white to-indigo-50/30 border-2 border-indigo-200/50 rounded-3xl p-6 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
-                    >
-                      {example.imageUrl && (
-                        <>
-                          <div
-                            className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity duration-300"
-                            style={{ backgroundImage: `url(${example.imageUrl})`, filter: "blur(3px)" }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-indigo-100/40" />
-                        </>
-                      )}
-
-                      <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                        <span className="text-xs font-bold text-indigo-600">{index + 1}</span>
-                      </div>
-
-                      <div className="relative z-10">
-                        <div className="text-3xl text-indigo-400/40 mb-2">"</div>
-                        <p className="text-base leading-relaxed font-medium text-gray-800 mb-3 pl-2">{example.sentence}</p>
-                        <div className="flex items-start gap-2 mt-4 pt-3 border-t border-indigo-200/50">
-                          <span className="text-lg flex-shrink-0">🎨</span>
-                          <p className="text-xs text-gray-600 leading-relaxed italic">{example.imageDescription}</p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-3 text-xs text-indigo-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span>🖼️</span>
-                          <span>Click to {example.imageUrl ? "view or regenerate" : "create"} image</span>
-                        </div>
-                      </div>
-
-                      <div className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-indigo-200/20 to-transparent rounded-tl-full" />
-                    </li>
-                  ))}
-                </ul>
-              </div>
+      <div className="relative overflow-hidden rounded-[28px] border border-indigo-50 bg-gradient-to-br from-white via-indigo-50/70 to-purple-100/70 p-8 shadow-inner">
+        <div className="absolute -left-20 top-16 h-48 w-48 rounded-full bg-indigo-200/30 blur-3xl" aria-hidden="true" />
+        <div className="absolute -right-24 -top-20 h-64 w-64 rounded-full bg-pink-200/20 blur-3xl" aria-hidden="true" />
+        <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-xl">
+            <h2 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">{currentWord.word}</h2>
+            {currentWord.pronunciation && (
+              <p className="mt-2 text-lg font-medium text-slate-500">{currentWord.pronunciation}</p>
+            )}
+            {currentWord.partOfSpeech && (
+              <span className="mt-4 inline-flex items-center rounded-full bg-blue-100/80 px-4 py-1 text-sm font-semibold text-blue-700 shadow-sm">
+                {currentWord.partOfSpeech}
+              </span>
             )}
           </div>
 
-          {!showDetails && (
-            <div className="mt-10 text-center text-sm text-gray-500">
-              Tap "Show Answer" to reveal the definition and examples.
+          <div className="flex flex-col gap-3 md:items-end">
+            <button
+              onClick={onToggleDetails}
+              type="button"
+              className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/40 transition hover:bg-indigo-700"
+            >
+              {showDetails ? "Hide Details" : "Show Answer"}
+            </button>
+            {currentExamples.length > 0 && (
+              <button
+                onClick={() => onOpenImageModal(0)}
+                type="button"
+                className="inline-flex items-center justify-center rounded-full bg-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-600/40 transition hover:bg-purple-700"
+              >
+                Create Images
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div
+          className={`relative mt-10 space-y-6 transition-all duration-300 ease-out ${
+            showDetails ? "max-h-[999px] opacity-100" : "max-h-0 overflow-hidden opacity-0"
+          }`}
+        >
+          <div className="rounded-3xl bg-white/80 p-6 shadow-sm shadow-indigo-100/60 backdrop-blur">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-400">Definition</h3>
+            <p className="mt-4 text-lg leading-relaxed text-slate-800 md:text-xl">{currentWord.definition}</p>
+          </div>
+
+          {currentExamples.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-400">Examples in Context</h3>
+              <ul className="grid gap-4 md:grid-cols-2">
+                {currentExamples.map((example, index) => (
+                  <li
+                    key={example.id}
+                    onClick={() => onOpenImageModal(index)}
+                    className="group relative flex cursor-pointer flex-col gap-4 overflow-hidden rounded-3xl border border-indigo-100/60 bg-white/80 p-6 shadow-lg shadow-indigo-200/40 transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-2xl"
+                  >
+                    {example.imageUrl && (
+                      <div
+                        className="absolute inset-0 opacity-10 transition-opacity duration-300 group-hover:opacity-20"
+                        style={{ backgroundImage: `url(${example.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }}
+                      />
+                    )}
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">
+                        <span>Example {index + 1}</span>
+                        <span className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] text-indigo-600">
+                          {example.imageUrl ? "Image Ready" : "Tap to Illustrate"}
+                        </span>
+                      </div>
+                      <p className="mt-4 text-base font-medium leading-relaxed text-slate-800">{example.sentence}</p>
+                      <div className="mt-3 flex items-start gap-3 rounded-2xl bg-indigo-50/60 p-3 text-xs text-indigo-600">
+                        <span className="text-lg">🎨</span>
+                        <p className="leading-relaxed italic">{example.imageDescription}</p>
+                      </div>
+                      <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-indigo-300 opacity-0 transition group-hover:opacity-100">
+                        Tap to {example.imageUrl ? "view or regenerate" : "create"} an image
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
+
+        {!showDetails && (
+          <div className="mt-12 text-center text-sm font-medium text-slate-500">
+            Tap “Show Answer” to reveal the definition and examples.
+          </div>
+        )}
       </div>
-    </>
+
+      <div className="rounded-[28px] border border-indigo-50 bg-white/80 p-6 shadow-inner shadow-indigo-100/40">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-400">Word Explorer</h3>
+          <p className="text-xs text-slate-400">Tap any tile to jump to that word.</p>
+        </div>
+        <div className="mt-4 max-h-72 overflow-y-auto pr-1">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {words.map((word, index) => {
+              const progress = word.progress?.find((item) => item.userId == null);
+              const mastery = toMasteryLevel(progress?.masteryLevel);
+              const isActive = index === currentIndex;
+
+              return (
+                <button
+                  key={word.id}
+                  type="button"
+                  onClick={() => onSelectWord(index)}
+                  className={`group relative flex h-full flex-col justify-between rounded-2xl border-2 p-4 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+                    isActive
+                      ? "border-indigo-500 bg-white shadow-xl shadow-indigo-300/40"
+                      : "border-transparent bg-white/70 hover:border-indigo-200 hover:shadow-lg"
+                  }`}
+                  aria-current={isActive}
+                >
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-300">
+                    #{index + 1}
+                  </span>
+                  <div className="mt-2 flex items-start gap-2">
+                    <span className="text-lg font-bold text-slate-900 leading-snug">{word.word}</span>
+                  </div>
+                  {word.partOfSpeech && (
+                    <span className="mt-3 inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-blue-600">
+                      {word.partOfSpeech}
+                    </span>
+                  )}
+                  <span className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${MASTERY_COLORS[mastery]}`}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                    {MASTERY_LABELS[mastery]}
+                  </span>
+                  {isActive && (
+                    <span className="absolute -inset-0.5 rounded-2xl border border-indigo-400/40" aria-hidden="true" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
