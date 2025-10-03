@@ -234,9 +234,9 @@ export default function StudyPage() {
     }
   };
 
-  const handleOpenImageModal = () => {
+  const handleOpenImageModal = (exampleIndex: number = 0) => {
     if (!currentWord || currentExamples.length === 0) return;
-    setSelectedExampleIndex(0);
+    setSelectedExampleIndex(exampleIndex);
     setImageGenerationError(null);
     setImageGenerationNotice(null);
     setShowImageModal(true);
@@ -481,7 +481,7 @@ export default function StudyPage() {
                         </button>
                         {currentExamples.length > 0 && (
                           <button
-                            onClick={handleOpenImageModal}
+                            onClick={() => handleOpenImageModal(0)}
                             className="px-4 py-2 rounded-full bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors shadow"
                           >
                             Create Images
@@ -498,12 +498,61 @@ export default function StudyPage() {
 
                       {currentWord.examples && currentWord.examples.length > 0 && (
                         <div>
-                          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Examples</h3>
-                          <ul className="mt-3 space-y-3">
-                            {currentWord.examples.map((example) => (
-                              <li key={example.id} className="bg-white/80 border border-indigo-100 rounded-2xl p-4 text-gray-700 shadow-sm">
-                                <p className="text-sm leading-relaxed">{example.sentence}</p>
-                                <p className="text-xs text-gray-400 mt-2">🖼️ {example.imageDescription}</p>
+                          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-4">Examples in Context</h3>
+                          <ul className="space-y-4">
+                            {currentWord.examples.map((example, index) => (
+                              <li 
+                                key={example.id} 
+                                onClick={() => handleOpenImageModal(index)}
+                                className="group relative overflow-hidden bg-gradient-to-br from-white via-white to-indigo-50/30 border-2 border-indigo-200/50 rounded-3xl p-6 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+                              >
+                                {/* Background Image with Fade */}
+                                {example.imageUrl && (
+                                  <>
+                                    <div 
+                                      className="absolute inset-0 bg-cover bg-center opacity-15 group-hover:opacity-25 transition-opacity duration-300"
+                                      style={{ 
+                                        backgroundImage: `url(${example.imageUrl})`,
+                                        filter: 'blur(3px)'
+                                      }}
+                                    />
+                                    {/* Gradient Overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-indigo-100/40" />
+                                  </>
+                                )}
+                                
+                                {/* Decorative Number Badge */}
+                                <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-indigo-600">{index + 1}</span>
+                                </div>
+                                
+                                {/* Content */}
+                                <div className="relative z-10">
+                                  {/* Quote Icon */}
+                                  <div className="text-3xl text-indigo-400/40 mb-2">"</div>
+                                  
+                                  {/* Sentence */}
+                                  <p className="text-base leading-relaxed font-medium text-gray-800 mb-3 pl-2">
+                                    {example.sentence}
+                                  </p>
+                                  
+                                  {/* Image Description with Icon */}
+                                  <div className="flex items-start gap-2 mt-4 pt-3 border-t border-indigo-200/50">
+                                    <span className="text-lg flex-shrink-0">🎨</span>
+                                    <p className="text-xs text-gray-600 leading-relaxed italic">
+                                      {example.imageDescription}
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Click hint */}
+                                  <div className="flex items-center gap-2 mt-3 text-xs text-indigo-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span>🖼️</span>
+                                    <span>Click to {example.imageUrl ? 'view or regenerate' : 'create'} image</span>
+                                  </div>
+                                </div>
+                                
+                                {/* Decorative Corner Accent */}
+                                <div className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-indigo-200/20 to-transparent rounded-tl-full" />
                               </li>
                             ))}
                           </ul>
@@ -591,113 +640,167 @@ export default function StudyPage() {
       </div>
 
       {showImageModal && currentWord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-gradient-to-br from-black/50 via-purple-900/30 to-black/50 backdrop-blur-sm"
             onClick={handleCloseImageModal}
             role="presentation"
           />
-          <div className="relative z-10 w-full max-w-4xl rounded-3xl bg-white shadow-2xl p-8">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Create Images for {currentWord.word}</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Select one of the five examples below to generate or refresh its illustration.
-                </p>
-              </div>
-              <button
-                onClick={handleCloseImageModal}
-                className="rounded-full bg-gray-100 hover:bg-gray-200 transition-colors w-10 h-10 flex items-center justify-center text-gray-600 text-lg"
-                aria-label="Close image generator"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="relative mt-6 border border-dashed border-purple-200 rounded-3xl bg-purple-50/40 overflow-hidden">
-              {selectedExample?.imageUrl ? (
-                <img
-                  src={selectedExample.imageUrl}
-                  alt={selectedExample.sentence}
-                  className="w-full max-h-[420px] object-contain bg-white"
-                />
-              ) : (
-                <div className="w-full max-h-[420px] flex items-center justify-center bg-white p-12 text-gray-400 text-sm">
-                  No image yet. Click "{selectedExample ? (selectedExample.imageUrl ? 'Regenerate' : 'Generate') : 'Generate'} Image" below to create one.
+          
+          {/* Modal Container - Optimized for iPad vertical */}
+          <div className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl">
+            {/* Header - Fixed */}
+            <div className="sticky top-0 z-20 bg-gradient-to-br from-purple-50 to-white border-b border-purple-100 px-6 py-5 rounded-t-3xl">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-2xl font-bold text-gray-900 truncate">{currentWord.word}</h2>
+                  <p className="text-sm text-purple-600 font-medium mt-0.5">
+                    Example {selectedExampleIndex + 1} of {currentExamples.length}
+                  </p>
                 </div>
-              )}
-
-              {isGeneratingSelectedExample && (
-                <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center">
-                  <div className="h-14 w-14 rounded-full border-4 border-purple-200 border-t-purple-500 animate-spin" />
-                </div>
-              )}
-            </div>
-
-            <p className="mt-4 text-center text-lg italic text-gray-700">
-              {selectedExample ? selectedExample.sentence : 'Select an example card below to begin.'}
-            </p>
-
-
-            {currentQueueLabels.length > 0 && (
-              <div className="mt-4 rounded-2xl bg-purple-50 border border-purple-200 px-4 py-3 text-sm text-purple-700">
-                <p className="font-semibold">Generating:</p>
-                <p>{currentQueueLabels.join(', ')}</p>
-              </div>
-            )}
-
-            <div className="mt-6 grid grid-cols-5 gap-4">
-              {Array.from({ length: totalExampleSlots }).map((_, idx) => {
-                const example = currentExamples[idx];
-                const isSelected = idx === selectedExampleIndex;
-                const isGenerating = example ? generatingExampleIds.has(example.id) : false;
-                const hasImage = Boolean(example?.imageUrl);
-
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      if (!example) return;
-                      setSelectedExampleIndex(idx);
-                      setImageGenerationError(null);
-                      setImageGenerationNotice(null);
-                    }}
-                    disabled={!example}
-                    className={`h-24 rounded-2xl border-2 flex flex-col items-center justify-center transition-all text-sm font-semibold ${
-                      isSelected
-                        ? 'border-purple-500 bg-purple-50 text-purple-600 shadow-md'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-purple-200 hover:bg-purple-50'
-                    } ${example ? '' : 'opacity-60 cursor-not-allowed'} ${isGenerating ? 'ring-2 ring-purple-300' : ''}`}
-                  >
-                    <span className="text-2xl font-bold">{idx + 1}</span>
-                    <span className="text-xs mt-1">
-                      {example ? (hasImage ? 'Image Ready' : 'No Image') : 'N/A'}
-                    </span>
-                    {isGenerating && (
-                      <span className="mt-2 h-4 w-4 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1 text-sm">
-                {imageGenerationError && <p className="text-red-600">{imageGenerationError}</p>}
-                {imageGenerationNotice && <p className="text-green-600">{imageGenerationNotice}</p>}
-              </div>
-              <div className="flex gap-3">
                 <button
-                  onClick={handleGenerateImage}
-                  disabled={!selectedExample || isGeneratingSelectedExample}
-                  className="px-5 py-3 rounded-full bg-purple-600 text-white font-semibold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg flex items-center gap-2"
+                  onClick={handleCloseImageModal}
+                  className="flex-shrink-0 rounded-full bg-white hover:bg-purple-50 border-2 border-purple-200 transition-all w-10 h-10 flex items-center justify-center text-gray-600 hover:text-purple-600 text-xl font-light shadow-sm"
+                  aria-label="Close"
                 >
-                  {isGeneratingSelectedExample && (
-                    <span className="h-4 w-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                  )}
-                  {selectedExample?.imageUrl ? 'Regenerate Image' : 'Generate Image'}
+                  ×
                 </button>
               </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="px-6 py-6 space-y-6">
+              {/* Image Display */}
+              <div className="relative rounded-2xl overflow-hidden border-2 border-purple-200 bg-gradient-to-br from-purple-50/50 to-white shadow-inner">
+                {selectedExample?.imageUrl ? (
+                  <img
+                    src={selectedExample.imageUrl}
+                    alt={selectedExample.sentence}
+                    className="w-full h-auto max-h-96 object-contain bg-white"
+                  />
+                ) : (
+                  <div className="w-full h-80 flex flex-col items-center justify-center gap-3 text-gray-400">
+                    <svg className="w-20 h-20 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm font-medium">No image yet</p>
+                  </div>
+                )}
+
+                {isGeneratingSelectedExample && (
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+                    <div className="h-12 w-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin" />
+                    <p className="text-sm font-semibold text-purple-600">Creating image...</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Example Sentence */}
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-5 border border-indigo-200">
+                <div className="flex gap-3">
+                  <span className="text-3xl text-indigo-400/60 flex-shrink-0">"</span>
+                  <p className="text-base leading-relaxed text-gray-800 font-medium pt-1">
+                    {selectedExample ? selectedExample.sentence : 'Select an example below'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Example Selection Grid */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                  Select Example
+                </p>
+                <div className="grid grid-cols-5 gap-3">
+                  {Array.from({ length: totalExampleSlots }).map((_, idx) => {
+                    const example = currentExamples[idx];
+                    const isSelected = idx === selectedExampleIndex;
+                    const isGenerating = example ? generatingExampleIds.has(example.id) : false;
+                    const hasImage = Boolean(example?.imageUrl);
+
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          if (!example) return;
+                          setSelectedExampleIndex(idx);
+                          setImageGenerationError(null);
+                          setImageGenerationNotice(null);
+                        }}
+                        disabled={!example}
+                        className={`relative h-20 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${
+                          isSelected
+                            ? 'border-purple-500 bg-purple-500 text-white shadow-lg scale-105'
+                            : hasImage
+                            ? 'border-green-300 bg-green-50 text-green-700 hover:border-green-400'
+                            : 'border-gray-200 bg-white text-gray-500 hover:border-purple-300'
+                        } ${example ? '' : 'opacity-40 cursor-not-allowed'} ${
+                          isGenerating ? 'ring-2 ring-purple-400 ring-offset-2' : ''
+                        }`}
+                      >
+                        <span className="text-xl font-bold">{idx + 1}</span>
+                        {hasImage && !isSelected && (
+                          <span className="absolute top-1 right-1 text-xs">✓</span>
+                        )}
+                        {isGenerating && (
+                          <div className="absolute -top-1 -right-1">
+                            <span className="flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Status Messages */}
+              {(imageGenerationError || imageGenerationNotice || currentQueueLabels.length > 0) && (
+                <div className="space-y-2">
+                  {imageGenerationError && (
+                    <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+                      <span className="text-lg">⚠️</span>
+                      <p>{imageGenerationError}</p>
+                    </div>
+                  )}
+                  {imageGenerationNotice && (
+                    <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 flex items-start gap-2">
+                      <span className="text-lg">✓</span>
+                      <p>{imageGenerationNotice}</p>
+                    </div>
+                  )}
+                  {currentQueueLabels.length > 0 && (
+                    <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3 text-sm text-purple-700">
+                      <p className="font-semibold">Generating: {currentQueueLabels.join(', ')}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action Button */}
+              <button
+                onClick={handleGenerateImage}
+                disabled={!selectedExample || isGeneratingSelectedExample}
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-lg hover:from-purple-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center gap-2"
+              >
+                {isGeneratingSelectedExample ? (
+                  <>
+                    <span className="h-5 w-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xl">
+                      {selectedExample?.imageUrl ? '🔄' : '✨'}
+                    </span>
+                    <span>
+                      {selectedExample?.imageUrl ? 'Regenerate Image' : 'Generate Image'}
+                    </span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
