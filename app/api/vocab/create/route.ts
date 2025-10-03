@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { generateExampleImage, processVocabularyWordWithExamples, parseVocabText } from '@/lib/gemini';
+import { processVocabularyWords, parseVocabText } from '@/lib/gemini';
 import { prisma } from '@/lib/prisma';
 import type { ProcessVocabRequest } from '@/lib/types';
 
@@ -15,18 +15,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Parse the raw text into individual words
-    console.log('Parsing vocab text...');
-    const parsedWords = parseVocabText(rawText);
+    // Simply pass the raw text to the AI - it will parse and process everything
+    const cleanedText = parseVocabText(rawText);
     
-    if (parsedWords.length === 0) {
+    if (!cleanedText) {
       return NextResponse.json(
-        { error: 'No vocabulary words found in the provided text' },
+        { error: 'No vocabulary text provided' },
         { status: 400 }
       );
     }
 
-    console.log(`Found ${parsedWords.length} words to process`);
+    console.log('Processing vocabulary text with AI...');
 
     // Create the vocabulary set
     const vocabSet = await prisma.vocabSet.create({
@@ -39,17 +38,18 @@ export async function POST(request: Request) {
 
     console.log(`Created vocab set: ${vocabSet.name} (${vocabSet.id})`);
 
-    // Process each word with AI
+    // Process ALL words with AI in a single batch request - AI parses and processes everything
+    console.log('Sending raw text to AI for parsing and processing...');
+    const aiResults = await processVocabularyWords(cleanedText);
+    console.log(`✓ AI processing complete for ${aiResults.length} words`);
+
+    // Save all words and examples to database in a transaction
+    console.log('Saving to database...');
     const processedWords = [];
     const errors = [];
 
-    for (const parsedWord of parsedWords) {
+    for (const aiResult of aiResults) {
       try {
-        console.log(`Processing word: ${parsedWord.word}`);
-        
-        // Use Gemini to generate comprehensive details
-        const aiResult = await processVocabularyWordWithExamples(parsedWord.word);
-        
         // Save to database with examples
         const vocabWord = await prisma.vocabWord.create({
           data: {
@@ -70,39 +70,12 @@ export async function POST(request: Request) {
           },
         });
 
-        const examplesWithImages = await Promise.all(
-          (vocabWord.examples ?? []).map(async (example) => {
-            try {
-              const generated = await generateExampleImage({
-                vocabSetId: vocabSet.id,
-                exampleId: example.id,
-                word: vocabWord.word,
-                imageDescription: example.imageDescription,
-              });
-
-              return await prisma.vocabExample.update({
-                where: { id: example.id },
-                data: { imageUrl: generated.publicUrl },
-              });
-            } catch (imageError) {
-              console.error(
-                `Error generating image for example ${example.id} of word "${vocabWord.word}":`,
-                imageError
-              );
-              return example;
-            }
-          })
-        );
-
-        processedWords.push({
-          ...vocabWord,
-          examples: examplesWithImages,
-        });
-        console.log(`✓ Successfully processed: ${parsedWord.word} with ${vocabWord.examples?.length || 0} examples`);
+        processedWords.push(vocabWord);
+        console.log(`✓ Saved to DB: ${aiResult.WORD} with ${vocabWord.examples?.length || 0} examples`);
       } catch (error) {
-        console.error(`Error processing word "${parsedWord.word}":`, error);
+        console.error(`Error saving word "${aiResult.WORD}":`, error);
         errors.push({ 
-          word: parsedWord.word, 
+          word: aiResult.WORD, 
           error: error instanceof Error ? error.message : 'Unknown error' 
         });
       }
@@ -124,7 +97,8 @@ export async function POST(request: Request) {
       success: true,
       vocabSet: completeVocabSet,
       processedWords: processedWords.length,
-      totalWords: parsedWords.length,
+      totalWords: aiResults.length,
+      message: 'Vocabulary set created successfully. Students can generate images on-demand.',
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {

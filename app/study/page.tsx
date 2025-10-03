@@ -373,54 +373,62 @@ export default function StudyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-100 py-12 px-4">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <header className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Study Flashcards</h1>
-          <p className="text-gray-600">
-            Review your vocabulary sets, track mastery, and keep practicing until every word feels easy.
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-100 py-6 px-4">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Sticky Header with Vocab Set Selector */}
+        <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 md:p-6">
+          <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+            <div className="flex-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Study Flashcards</h1>
+              <p className="text-sm text-gray-600 mt-1">Review vocabulary and track your mastery progress</p>
+            </div>
+            
+            {/* Vocab Set Dropdown */}
+            <div className="flex-shrink-0 md:w-80">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Vocabulary Set
+              </label>
+              <select
+                value={selectedSetId}
+                onChange={(e) => {
+                  const setId = e.target.value;
+                  setSelectedSetId(setId);
+                  const selectedSet = vocabSets.find(s => s.id === setId);
+                  setSelectedSetName(selectedSet?.name || "");
+                }}
+                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-medium focus:outline-none focus:border-blue-500 transition-colors"
+              >
+                {vocabSets.length === 0 ? (
+                  <option value="">No vocabulary sets available</option>
+                ) : (
+                  vocabSets.map(set => (
+                    <option key={set.id} value={set.id}>
+                      {set.name} {set.words ? `(${set.words.length} words)` : ''} {set.grade ? `- Grade ${set.grade}` : ''}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+          </div>
         </header>
 
         {errorMessage && (
-          <div className="max-w-3xl mx-auto bg-red-50 border border-red-200 text-red-700 px-6 py-3 rounded-xl">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-3 rounded-xl">
             {errorMessage}
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-          <aside className="space-y-6">
-            <div className="bg-white/80 rounded-3xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Vocabulary Sets</h2>
-              {renderSetList()}
-            </div>
-
-            <div className="bg-white/80 rounded-3xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Mastery Overview</h2>
-              {words.length === 0 ? (
-                <p className="text-sm text-gray-500">Choose a set to see your progress.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {(Object.entries(MASTERY_LABELS) as Array<[string, string]>).map(([levelKey, label]) => {
-                    const level = Number(levelKey) as MasteryLevel;
-                    const count = masterySummary[level];
-                    const color = MASTERY_COLORS[level];
-                    return (
-                      <li key={levelKey} className="flex items-center justify-between">
-                        <span className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full ${color}`}>
-                          {label}
-                        </span>
-                        <span className="text-sm text-gray-600">{count}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-          </aside>
-
-          <main className="bg-white/80 rounded-3xl shadow-xl p-8 min-h-[500px] flex flex-col">
-            {wordsState === "loading" && words.length === 0 ? (
+        {/* Main Content Area - Flashcard Primary Focus */}
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+          {/* Flashcard - Primary Focus Area */}
+          <div className="order-1">
+            {words.length === 0 ? (
+              <div className="bg-white/90 rounded-2xl shadow-lg p-12 text-center">
+                <div className="text-6xl mb-4">📚</div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Vocabulary Set Selected</h3>
+                <p className="text-gray-600">Select a vocabulary set from the dropdown above to start studying.</p>
+              </div>
+            ) : wordsState === "loading" ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
                   <div className="mx-auto h-16 w-16 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin" />
@@ -546,7 +554,39 @@ export default function StudyPage() {
                 </div>
               </>
             )}
-          </main>
+          </div>
+
+          {/* Mastery Progress Sidebar - Secondary */}
+          <aside className="order-2">
+            <div className="bg-white/90 rounded-2xl shadow-lg p-6 sticky top-28">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Mastery Progress</h2>
+              {words.length === 0 ? (
+                <p className="text-sm text-gray-500">Select a set to see your progress.</p>
+              ) : (
+                <div className="space-y-3">
+                  {(Object.entries(MASTERY_LABELS) as Array<[string, string]>).map(([levelKey, label]) => {
+                    const level = Number(levelKey) as MasteryLevel;
+                    const count = masterySummary[level];
+                    const color = MASTERY_COLORS[level];
+                    return (
+                      <div key={levelKey} className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+                        <span className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full ${color}`}>
+                          {label}
+                        </span>
+                        <span className="text-lg font-bold text-gray-700">{count}</span>
+                      </div>
+                    );
+                  })}
+                  <div className="pt-3 mt-3 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Total Words</span>
+                      <span className="text-lg font-bold text-gray-900">{words.length}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
         </div>
       </div>
 

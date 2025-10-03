@@ -1,66 +1,66 @@
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50">
-      <main className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 max-w-7xl">
+        <div className="text-center mb-8 md:mb-12">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-3 md:mb-4">
             🎓 Vocab AI
           </h1>
-          <p className="text-xl text-gray-600 mb-2">
+          <p className="text-lg md:text-xl lg:text-2xl text-gray-600 mb-2">
             AI-Powered Vocabulary Learning for Elementary Students
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs md:text-sm text-gray-500">
             Powered by Google Gemini & Vercel AI SDK
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-6xl mx-auto mb-8 md:mb-12">
           {/* Create Vocabulary */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">
-            <div className="text-4xl mb-4">📝</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 hover:shadow-xl transition-all hover:scale-105 active:scale-100">
+            <div className="text-4xl md:text-5xl mb-3 md:mb-4">📝</div>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">
               Create Vocabulary
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6">
               Add words and let AI generate definitions, examples, and illustrations.
             </p>
             <a
               href="/create"
-              className="inline-block w-full text-center bg-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors"
+              className="inline-block w-full text-center bg-purple-600 text-white font-semibold py-3 md:py-4 px-4 md:px-6 rounded-xl md:rounded-2xl hover:bg-purple-700 transition-colors shadow-lg active:shadow-md text-sm md:text-base"
             >
               Get Started
             </a>
           </div>
 
           {/* Study Flashcards */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">
-            <div className="text-4xl mb-4">🎴</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 hover:shadow-xl transition-all hover:scale-105 active:scale-100">
+            <div className="text-4xl md:text-5xl mb-3 md:mb-4">🎴</div>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">
               Study Flashcards
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6">
               Review vocabulary with interactive flashcards and track your progress.
             </p>
             <a
               href="/study"
-              className="inline-block w-full text-center bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-block w-full text-center bg-blue-600 text-white font-semibold py-3 md:py-4 px-4 md:px-6 rounded-xl md:rounded-2xl hover:bg-blue-700 transition-colors shadow-lg active:shadow-md text-sm md:text-base"
             >
               Study Now
             </a>
           </div>
 
           {/* Play Games */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">
-            <div className="text-4xl mb-4">🎮</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 hover:shadow-xl transition-all hover:scale-105 active:scale-100 sm:col-span-2 lg:col-span-1">
+            <div className="text-4xl md:text-5xl mb-3 md:mb-4">🎮</div>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">
               Play Games
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6">
               Reinforce learning with fun matching games and quizzes.
             </p>
             <a
               href="/games"
-              className="inline-block w-full text-center bg-pink-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-pink-700 transition-colors"
+              className="inline-block w-full text-center bg-pink-600 text-white font-semibold py-3 md:py-4 px-4 md:px-6 rounded-xl md:rounded-2xl hover:bg-pink-700 transition-colors shadow-lg active:shadow-md text-sm md:text-base"
             >
               Play Games
             </a>
@@ -68,43 +68,43 @@ export default function Home() {
         </div>
 
         {/* Features Section */}
-        <div className="mt-16 bg-white rounded-2xl shadow-lg p-8 max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+        <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 max-w-5xl mx-auto mb-8 md:mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-8 text-center">
             Features
           </h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="flex gap-4">
-              <div className="text-2xl">🤖</div>
+          <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
+            <div className="flex gap-3 md:gap-4 p-3 md:p-4 rounded-xl hover:bg-gray-50 transition-colors">
+              <div className="text-2xl md:text-3xl flex-shrink-0">🤖</div>
               <div>
-                <h3 className="font-bold text-gray-900 mb-2">AI-Generated Content</h3>
-                <p className="text-gray-600 text-sm">
+                <h3 className="font-bold text-base md:text-lg text-gray-900 mb-1 md:mb-2">AI-Generated Content</h3>
+                <p className="text-xs md:text-sm text-gray-600">
                   Automatic definitions, examples, and custom illustrations for each word
                 </p>
               </div>
             </div>
-            <div className="flex gap-4">
-              <div className="text-2xl">📊</div>
+            <div className="flex gap-3 md:gap-4 p-3 md:p-4 rounded-xl hover:bg-gray-50 transition-colors">
+              <div className="text-2xl md:text-3xl flex-shrink-0">📊</div>
               <div>
-                <h3 className="font-bold text-gray-900 mb-2">Progress Tracking</h3>
-                <p className="text-gray-600 text-sm">
+                <h3 className="font-bold text-base md:text-lg text-gray-900 mb-1 md:mb-2">Progress Tracking</h3>
+                <p className="text-xs md:text-sm text-gray-600">
                   Monitor mastery levels and identify words that need more practice
                 </p>
               </div>
             </div>
-            <div className="flex gap-4">
-              <div className="text-2xl">🎯</div>
+            <div className="flex gap-3 md:gap-4 p-3 md:p-4 rounded-xl hover:bg-gray-50 transition-colors">
+              <div className="text-2xl md:text-3xl flex-shrink-0">🎯</div>
               <div>
-                <h3 className="font-bold text-gray-900 mb-2">Interactive Games</h3>
-                <p className="text-gray-600 text-sm">
+                <h3 className="font-bold text-base md:text-lg text-gray-900 mb-1 md:mb-2">Interactive Games</h3>
+                <p className="text-xs md:text-sm text-gray-600">
                   Matching games and quizzes make learning fun and engaging
                 </p>
               </div>
             </div>
-            <div className="flex gap-4">
-              <div className="text-2xl">⭐</div>
+            <div className="flex gap-3 md:gap-4 p-3 md:p-4 rounded-xl hover:bg-gray-50 transition-colors">
+              <div className="text-2xl md:text-3xl flex-shrink-0">⭐</div>
               <div>
-                <h3 className="font-bold text-gray-900 mb-2">Mastery Levels</h3>
-                <p className="text-gray-600 text-sm">
+                <h3 className="font-bold text-base md:text-lg text-gray-900 mb-1 md:mb-2">Mastery Levels</h3>
+                <p className="text-xs md:text-sm text-gray-600">
                   6-level system from "Not Learned" to "Expert"
                 </p>
               </div>
@@ -113,17 +113,17 @@ export default function Home() {
         </div>
 
         {/* Setup Instructions */}
-        <div className="mt-12 max-w-4xl mx-auto bg-amber-50 border-2 border-amber-200 rounded-2xl p-8">
-          <h2 className="text-2xl font-bold text-amber-900 mb-4">
+        <div className="max-w-5xl mx-auto bg-amber-50 border-2 border-amber-200 rounded-2xl md:rounded-3xl p-6 md:p-8">
+          <h2 className="text-xl md:text-2xl font-bold text-amber-900 mb-3 md:mb-4">
             ⚙️ Setup Required
           </h2>
-          <p className="text-amber-800 mb-4">
+          <p className="text-sm md:text-base text-amber-800 mb-3 md:mb-4">
             Before you can start using Vocab AI, please complete the following steps:
           </p>
-          <ol className="list-decimal list-inside space-y-2 text-amber-900">
-            <li>Add your Google Gemini API key to <code className="bg-amber-100 px-2 py-1 rounded">.env.local</code></li>
+          <ol className="list-decimal list-inside space-y-2 text-sm md:text-base text-amber-900">
+            <li>Add your Google Gemini API key to <code className="bg-amber-100 px-2 py-1 rounded text-xs md:text-sm">.env.local</code></li>
             <li>Set up PostgreSQL database (Docker or local)</li>
-            <li>Run <code className="bg-amber-100 px-2 py-1 rounded">npx prisma migrate dev</code></li>
+            <li>Run <code className="bg-amber-100 px-2 py-1 rounded text-xs md:text-sm">npx prisma migrate dev</code></li>
             <li>Start the development server</li>
           </ol>
         </div>

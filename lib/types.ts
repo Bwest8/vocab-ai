@@ -98,12 +98,6 @@ export interface UpdateProgressResponse {
   progress: StudyProgress;
 }
 
-export interface QuizQuestion {
-  question: string;
-  correctAnswer: string;
-  choices: string[];
-}
-
 export type MasteryLevel = 0 | 1 | 2 | 3 | 4 | 5;
 
 export const MASTERY_LABELS: Record<MasteryLevel, string> = {
