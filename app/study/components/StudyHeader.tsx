@@ -25,19 +25,21 @@ export function StudyHeader({
   totalWords,
 }: StudyHeaderProps) {
   return (
-    <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 md:p-6 space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-        <div className="flex-1">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Study Flashcards</h1>
-          <p className="text-sm text-gray-600 mt-1">Review vocabulary and track your mastery progress</p>
+    <header className="sticky top-3 z-20 rounded-3xl border border-white/60 bg-white/75 px-4 py-3 shadow-lg shadow-indigo-100/60 backdrop-blur-md md:px-6 md:py-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-1 flex-col gap-1">
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900 md:text-2xl">Study Flashcards</h1>
+          <p className="text-xs font-medium uppercase tracking-[0.25em] text-indigo-300">Review &amp; master your vocabulary</p>
         </div>
 
-        <div className="flex-shrink-0 md:w-80">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Select Vocabulary Set</label>
+        <div className="w-full max-w-xs md:max-w-sm">
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">
+            Vocabulary Set
+          </label>
           <select
             value={selectedSetId}
             onChange={(event) => onSelectSet(event.target.value)}
-            className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-medium focus:outline-none focus:border-blue-500 transition-colors"
+            className="mt-1 w-full rounded-2xl border border-indigo-100 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-200"
           >
             {vocabSets.length === 0 ? (
               <option value="">No vocabulary sets available</option>
@@ -55,16 +57,16 @@ export function StudyHeader({
       </div>
 
       {totalWords > 0 && (
-        <div>
-          <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
-            <span className="font-semibold uppercase tracking-widest">Mastery Progress</span>
-            <span className="font-medium text-gray-700">{totalWords} words</span>
+        <div className="mt-3 md:mt-4">
+          <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.25em] text-slate-400">
+            <span>Mastery Progress</span>
+            <span className="text-slate-500">{totalWords} words</span>
           </div>
-          <div className="flex h-4 overflow-hidden rounded-full border border-gray-200 bg-gray-100">
+          <div className="mt-2 flex h-3 overflow-hidden rounded-full border border-indigo-100 bg-indigo-50">
             {masterySegments
               .filter((segment) => segment.percentage > 0)
               .map((segment, index, array) => {
-                const showCount = segment.percentage >= 12;
+                const showCount = segment.percentage >= 14;
                 return (
                   <div
                     key={segment.level}
@@ -75,7 +77,7 @@ export function StudyHeader({
                     aria-label={`${segment.label}: ${segment.count} words`}
                   >
                     {showCount ? (
-                      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-gray-900">
+                      <span className="absolute inset-0 flex items-center justify-center text-[9px] font-semibold text-slate-800">
                         {segment.count}
                       </span>
                     ) : (
@@ -85,14 +87,19 @@ export function StudyHeader({
                 );
               })}
           </div>
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs text-gray-600">
-            {masterySegments.map((segment) => (
-              <div key={segment.level} className="flex items-center gap-2">
-                <span className={`h-2 w-6 rounded-full ${MASTERY_SEGMENT_BG[segment.level]}`} />
-                <span className="font-medium text-gray-700">{segment.label}</span>
-                <span className="text-gray-500">({segment.count})</span>
-              </div>
-            ))}
+          <div className="mt-2 -mx-1 overflow-x-auto">
+            <ul className="flex flex-nowrap items-center gap-2 px-1 text-[11px] text-slate-500">
+              {masterySegments.map((segment) => (
+                <li
+                  key={segment.level}
+                  className="flex items-center gap-1 rounded-full bg-white/70 px-3 py-1 shadow-sm shadow-white/60"
+                >
+                  <span className={`h-2 w-5 shrink-0 rounded-full ${MASTERY_SEGMENT_BG[segment.level]}`} />
+                  <span className="font-semibold text-slate-600">{segment.label}</span>
+                  <span className="text-slate-400">({segment.count})</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       )}

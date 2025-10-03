@@ -150,13 +150,6 @@ export function StudyImageModal({
             </div>
           )}
 
-          {imageGenerationNotice && !imageGenerationError && (
-            <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 flex items-start gap-2">
-              <span className="text-lg">✅</span>
-              <p>{imageGenerationNotice}</p>
-            </div>
-          )}
-
           <button
             onClick={onGenerateImage}
             disabled={!selectedExample || isGeneratingSelectedExample}

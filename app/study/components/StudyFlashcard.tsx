@@ -141,54 +141,69 @@ export function StudyFlashcard({
           </div>
         </div>
 
-        <div
-          className={`relative mt-10 space-y-6 transition-all duration-300 ease-out ${
-            showDetails ? "max-h-[999px] opacity-100" : "max-h-0 overflow-hidden opacity-0"
-          }`}
-        >
-          <div className="rounded-3xl bg-white/80 p-6 shadow-sm shadow-indigo-100/60 backdrop-blur">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-400">Definition</h3>
-            <p className="mt-4 text-lg leading-relaxed text-slate-800 md:text-xl">{currentWord.definition}</p>
-          </div>
-
-          {currentExamples.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-400">Examples in Context</h3>
-              <ul className="grid gap-4 md:grid-cols-2">
-                {currentExamples.map((example, index) => (
-                  <li
-                    key={example.id}
-                    onClick={() => onOpenImageModal(index)}
-                    className="group relative flex cursor-pointer flex-col gap-4 overflow-hidden rounded-3xl border border-indigo-100/60 bg-white/80 p-6 shadow-lg shadow-indigo-200/40 transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-2xl"
-                  >
-                    {example.imageUrl && (
-                      <div
-                        className="absolute inset-0 opacity-10 transition-opacity duration-300 group-hover:opacity-20"
-                        style={{ backgroundImage: `url(${example.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }}
-                      />
-                    )}
-                    <div className="relative z-10">
-                      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">
-                        <span>Example {index + 1}</span>
-                        <span className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] text-indigo-600">
-                          {example.imageUrl ? "Image Ready" : "Tap to Illustrate"}
-                        </span>
-                      </div>
-                      <p className="mt-4 text-base font-medium leading-relaxed text-slate-800">{example.sentence}</p>
-                      <div className="mt-3 flex items-start gap-3 rounded-2xl bg-indigo-50/60 p-3 text-xs text-indigo-600">
-                        <span className="text-lg">🎨</span>
-                        <p className="leading-relaxed italic">{example.imageDescription}</p>
-                      </div>
-                      <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-indigo-300 opacity-0 transition group-hover:opacity-100">
-                        Tap to {example.imageUrl ? "view or regenerate" : "create"} an image
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+        {showDetails && (
+          <div className="relative mt-10 space-y-6">
+            <div className="rounded-3xl bg-white/80 p-6 shadow-sm shadow-indigo-100/60 backdrop-blur">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-400">Definition</h3>
+              <p className="mt-4 text-lg leading-relaxed text-slate-800 md:text-xl">{currentWord.definition}</p>
             </div>
-          )}
-        </div>
+
+            {currentExamples.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-400">Examples in Context</h3>
+                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-200">
+                    Tap any card to explore imagery and context
+                  </p>
+                </div>
+
+                <ul className="flex flex-col gap-3" role="list">
+                  {currentExamples.map((example, index) => (
+                    <li key={example.id}>
+                      <button
+                        type="button"
+                        onClick={() => onOpenImageModal(index)}
+                        className="group relative flex h-full w-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border border-indigo-100/70 bg-white/25 p-5 text-left shadow-lg shadow-indigo-200/40 backdrop-blur-sm transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+                      >
+                        {example.imageUrl ? (
+                          <>
+                            <div
+                              className="pointer-events-none absolute inset-0 -z-20 opacity-45 transition-opacity duration-300 group-hover:opacity-60"
+                              style={{
+                                backgroundImage: `url(${example.imageUrl})`,
+                                backgroundSize: "cover",
+                                backgroundPosition: "center",
+                              }}
+                            />
+                            <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-white/55 via-white/20 to-indigo-100/20 group-hover:from-white/40 group-hover:via-white/15 group-hover:to-indigo-100/15" />
+                          </>
+                        ) : (
+                          <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-white via-indigo-50/60 to-purple-50/70" />
+                        )}
+
+                        <header className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400">
+                          <span>Example {index + 1}</span>
+                          <span className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] text-indigo-500 shadow-sm">
+                            {example.imageUrl ? "Image Ready" : "Illustrate"}
+                          </span>
+                        </header>
+
+                        <p className="mt-4 text-base font-medium leading-relaxed text-slate-800">{example.sentence}</p>
+
+                        <footer className="mt-4 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.25em] text-indigo-300 opacity-0 transition group-hover:opacity-100">
+                          <span>
+                            Tap to {example.imageUrl ? "view or regenerate" : "create"} image
+                          </span>
+                          <span className="text-indigo-400">›</span>
+                        </footer>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+        )}
 
         {!showDetails && (
           <div className="mt-12 text-center text-sm font-medium text-slate-500">
