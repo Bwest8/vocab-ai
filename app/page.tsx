@@ -1,22 +1,22 @@
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-100">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 max-w-7xl">
         <div className="text-center mb-8 md:mb-12">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-3 md:mb-4">
             🎓 Vocab AI
           </h1>
-          <p className="text-lg md:text-xl lg:text-2xl text-gray-600 mb-2">
+          <p className="text-lg md:text-xl lg:text-2xl text-gray-700 mb-2">
             AI-Powered Vocabulary Learning for Elementary Students
           </p>
-          <p className="text-xs md:text-sm text-gray-500">
+          <p className="text-xs md:text-sm text-gray-600">
             Powered by Google Gemini & Vercel AI SDK
           </p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-6xl mx-auto mb-8 md:mb-12">
           {/* Create Vocabulary */}
-          <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 hover:shadow-xl transition-all hover:scale-105 active:scale-100">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 hover:shadow-xl transition-all hover:scale-105 active:scale-100">
             <div className="text-4xl md:text-5xl mb-3 md:mb-4">📝</div>
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">
               Create Vocabulary
@@ -26,14 +26,14 @@ export default function Home() {
             </p>
             <a
               href="/create"
-              className="inline-block w-full text-center bg-purple-600 text-white font-semibold py-3 md:py-4 px-4 md:px-6 rounded-xl md:rounded-2xl hover:bg-purple-700 transition-colors shadow-lg active:shadow-md text-sm md:text-base"
+              className="inline-block w-full text-center bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold py-3 md:py-4 px-4 md:px-6 rounded-xl md:rounded-2xl hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg active:shadow-md text-sm md:text-base"
             >
               Get Started
             </a>
           </div>
 
           {/* Study Flashcards */}
-          <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 hover:shadow-xl transition-all hover:scale-105 active:scale-100">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 hover:shadow-xl transition-all hover:scale-105 active:scale-100">
             <div className="text-4xl md:text-5xl mb-3 md:mb-4">🎴</div>
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">
               Study Flashcards
@@ -43,37 +43,37 @@ export default function Home() {
             </p>
             <a
               href="/study"
-              className="inline-block w-full text-center bg-blue-600 text-white font-semibold py-3 md:py-4 px-4 md:px-6 rounded-xl md:rounded-2xl hover:bg-blue-700 transition-colors shadow-lg active:shadow-md text-sm md:text-base"
+              className="inline-block w-full text-center bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold py-3 md:py-4 px-4 md:px-6 rounded-xl md:rounded-2xl hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg active:shadow-md text-sm md:text-base"
             >
               Study Now
             </a>
           </div>
 
-          {/* Play Games */}
-          <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 hover:shadow-xl transition-all hover:scale-105 active:scale-100 sm:col-span-2 lg:col-span-1">
-            <div className="text-4xl md:text-5xl mb-3 md:mb-4">🎮</div>
+          {/* Manage Sets */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 hover:shadow-xl transition-all hover:scale-105 active:scale-100 sm:col-span-2 lg:col-span-1">
+            <div className="text-4xl md:text-5xl mb-3 md:mb-4">⚙️</div>
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">
-              Play Games
+              Manage Sets
             </h2>
             <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6">
-              Reinforce learning with fun matching games and quizzes.
+              Edit and organize your vocabulary sets and words.
             </p>
             <a
-              href="/games"
-              className="inline-block w-full text-center bg-pink-600 text-white font-semibold py-3 md:py-4 px-4 md:px-6 rounded-xl md:rounded-2xl hover:bg-pink-700 transition-colors shadow-lg active:shadow-md text-sm md:text-base"
+              href="/manage"
+              className="inline-block w-full text-center bg-gradient-to-r from-pink-600 to-rose-600 text-white font-semibold py-3 md:py-4 px-4 md:px-6 rounded-xl md:rounded-2xl hover:from-pink-700 hover:to-rose-700 transition-all shadow-lg active:shadow-md text-sm md:text-base"
             >
-              Play Games
+              Manage Now
             </a>
           </div>
         </div>
 
         {/* Features Section */}
-        <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 max-w-5xl mx-auto mb-8 md:mb-12">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl md:rounded-3xl shadow-lg p-6 md:p-8 max-w-5xl mx-auto mb-8 md:mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 md:mb-8 text-center">
             Features
           </h2>
           <div className="grid sm:grid-cols-2 gap-4 md:gap-6">
-            <div className="flex gap-3 md:gap-4 p-3 md:p-4 rounded-xl hover:bg-gray-50 transition-colors">
+            <div className="flex gap-3 md:gap-4 p-3 md:p-4 rounded-xl hover:bg-purple-50 transition-colors">
               <div className="text-2xl md:text-3xl flex-shrink-0">🤖</div>
               <div>
                 <h3 className="font-bold text-base md:text-lg text-gray-900 mb-1 md:mb-2">AI-Generated Content</h3>
@@ -82,7 +82,7 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-3 md:gap-4 p-3 md:p-4 rounded-xl hover:bg-gray-50 transition-colors">
+            <div className="flex gap-3 md:gap-4 p-3 md:p-4 rounded-xl hover:bg-purple-50 transition-colors">
               <div className="text-2xl md:text-3xl flex-shrink-0">📊</div>
               <div>
                 <h3 className="font-bold text-base md:text-lg text-gray-900 mb-1 md:mb-2">Progress Tracking</h3>
@@ -91,12 +91,12 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-3 md:gap-4 p-3 md:p-4 rounded-xl hover:bg-gray-50 transition-colors">
+            <div className="flex gap-3 md:gap-4 p-3 md:p-4 rounded-xl hover:bg-purple-50 transition-colors">
               <div className="text-2xl md:text-3xl flex-shrink-0">🎯</div>
               <div>
-                <h3 className="font-bold text-base md:text-lg text-gray-900 mb-1 md:mb-2">Interactive Games</h3>
+                <h3 className="font-bold text-base md:text-lg text-gray-900 mb-1 md:mb-2">Visual Learning</h3>
                 <p className="text-xs md:text-sm text-gray-600">
-                  Matching games and quizzes make learning fun and engaging
+                  On-demand image generation helps visualize word meanings
                 </p>
               </div>
             </div>

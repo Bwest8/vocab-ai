@@ -4,6 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import type { StudyProgress, VocabSet, VocabWord } from "@/lib/types";
 import { MASTERY_COLORS, MASTERY_LABELS, type MasteryLevel } from "@/lib/types";
 
+const MASTERY_SEGMENT_BG: Record<MasteryLevel, string> = {
+  0: "bg-gray-300",
+  1: "bg-red-300",
+  2: "bg-orange-300",
+  3: "bg-yellow-300",
+  4: "bg-green-300",
+  5: "bg-emerald-400",
+};
+
 type VocabSetSummary = Pick<VocabSet, "id" | "name" | "description" | "grade"> & {
   words?: Array<Pick<VocabWord, "id" | "word">>;
 };
@@ -175,6 +184,25 @@ export default function StudyPage() {
     }, { ...initial });
   }, [words]);
 
+  const totalWords = words.length;
+
+  const masterySegments = useMemo(
+    () =>
+      (Object.entries(MASTERY_LABELS) as Array<[string, string]>).map(([levelKey, label]) => {
+        const numericLevel = Number(levelKey) as MasteryLevel;
+        const count = masterySummary[numericLevel] ?? 0;
+        const percentage = totalWords > 0 ? (count / totalWords) * 100 : 0;
+
+        return {
+          level: numericLevel,
+          label,
+          count,
+          percentage,
+        };
+      }),
+    [masterySummary, totalWords]
+  );
+
   const goToNextWord = () => {
     if (words.length === 0) return;
     setCurrentIndex((prev) => (prev + 1) % words.length);
@@ -313,70 +341,11 @@ export default function StudyPage() {
     }
   };
 
-  const renderSetList = () => {
-    if (setState === "loading" && vocabSets.length === 0) {
-      return (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, idx) => (
-            <div key={idx} className="h-16 rounded-xl bg-white/60 animate-pulse" />
-          ))}
-        </div>
-      );
-    }
-
-    if (setState === "error") {
-      return (
-        <div className="rounded-2xl bg-red-50 border border-red-200 p-4 text-red-700">
-          Unable to load vocabulary sets.
-        </div>
-      );
-    }
-
-    if (vocabSets.length === 0) {
-      return (
-        <div className="rounded-2xl bg-white p-6 text-center shadow-lg">
-          <p className="text-gray-600">
-            No vocabulary sets yet. Head to the <a href="/create" className="text-blue-600 underline">Create page</a> to add your first set.
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        {vocabSets.map((set) => {
-          const isActive = set.id === selectedSetId;
-          return (
-            <button
-              key={set.id}
-              onClick={() => {
-                setSelectedSetId(set.id);
-                setSelectedSetName(set.name);
-              }}
-              className={`w-full text-left rounded-2xl border-2 p-4 transition-all shadow-sm hover:shadow-md ${
-                isActive ? "border-blue-500 bg-white" : "border-transparent bg-white/70"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">{set.name}</h3>
-                {set.words && (
-                  <span className="text-sm text-gray-500">{set.words.length} words</span>
-                )}
-              </div>
-              {set.grade && <p className="text-sm text-gray-500 mt-1">Grade: {set.grade}</p>}
-              {set.description && <p className="text-sm text-gray-500 mt-1">{set.description}</p>}
-            </button>
-          );
-        })}
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-100 py-6 px-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Sticky Header with Vocab Set Selector */}
-        <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 md:p-6">
+        <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 md:p-6 space-y-4">
           <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
             <div className="flex-1">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Study Flashcards</h1>
@@ -410,6 +379,49 @@ export default function StudyPage() {
               </select>
             </div>
           </div>
+
+          {totalWords > 0 && (
+            <div>
+              <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                <span className="font-semibold uppercase tracking-widest">Mastery Progress</span>
+                <span className="font-medium text-gray-700">{totalWords} words</span>
+              </div>
+              <div className="flex h-4 overflow-hidden rounded-full border border-gray-200 bg-gray-100">
+                {masterySegments
+                  .filter((segment) => segment.percentage > 0)
+                  .map((segment, idx, arr) => {
+                    const showCount = segment.percentage >= 12;
+                    return (
+                      <div
+                        key={segment.level}
+                        className={`relative h-full transition-[width] duration-500 ease-out ${MASTERY_SEGMENT_BG[segment.level]} ${
+                          idx !== arr.length - 1 ? 'border-r border-white/60' : ''
+                        }`}
+                        style={{ width: `${segment.percentage}%` }}
+                        aria-label={`${segment.label}: ${segment.count} words`}
+                      >
+                        {showCount ? (
+                          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-gray-900">
+                            {segment.count}
+                          </span>
+                        ) : (
+                          <span className="sr-only">{`${segment.label}: ${segment.count} words`}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs text-gray-600">
+                {masterySegments.map((segment) => (
+                  <div key={segment.level} className="flex items-center gap-2">
+                    <span className={`h-2 w-6 rounded-full ${MASTERY_SEGMENT_BG[segment.level]}`} />
+                    <span className="font-medium text-gray-700">{segment.label}</span>
+                    <span className="text-gray-500">({segment.count})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </header>
 
         {errorMessage && (
@@ -419,9 +431,9 @@ export default function StudyPage() {
         )}
 
         {/* Main Content Area - Flashcard Primary Focus */}
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-6">
           {/* Flashcard - Primary Focus Area */}
-          <div className="order-1">
+          <div>
             {words.length === 0 ? (
               <div className="bg-white/90 rounded-2xl shadow-lg p-12 text-center">
                 <div className="text-6xl mb-4">📚</div>
@@ -506,7 +518,6 @@ export default function StudyPage() {
                                 onClick={() => handleOpenImageModal(index)}
                                 className="group relative overflow-hidden bg-gradient-to-br from-white via-white to-indigo-50/30 border-2 border-indigo-200/50 rounded-3xl p-6 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
                               >
-                                {/* Background Image with Fade */}
                                 {example.imageUrl && (
                                   <>
                                     <div 
@@ -516,42 +527,31 @@ export default function StudyPage() {
                                         filter: 'blur(3px)'
                                       }}
                                     />
-                                    {/* Gradient Overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-indigo-100/40" />
                                   </>
                                 )}
                                 
-                                {/* Decorative Number Badge */}
                                 <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
                                   <span className="text-xs font-bold text-indigo-600">{index + 1}</span>
                                 </div>
                                 
-                                {/* Content */}
                                 <div className="relative z-10">
-                                  {/* Quote Icon */}
                                   <div className="text-3xl text-indigo-400/40 mb-2">"</div>
-                                  
-                                  {/* Sentence */}
                                   <p className="text-base leading-relaxed font-medium text-gray-800 mb-3 pl-2">
                                     {example.sentence}
                                   </p>
-                                  
-                                  {/* Image Description with Icon */}
                                   <div className="flex items-start gap-2 mt-4 pt-3 border-t border-indigo-200/50">
                                     <span className="text-lg flex-shrink-0">🎨</span>
                                     <p className="text-xs text-gray-600 leading-relaxed italic">
                                       {example.imageDescription}
                                     </p>
                                   </div>
-                                  
-                                  {/* Click hint */}
                                   <div className="flex items-center gap-2 mt-3 text-xs text-indigo-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                                     <span>🖼️</span>
                                     <span>Click to {example.imageUrl ? 'view or regenerate' : 'create'} image</span>
                                   </div>
                                 </div>
                                 
-                                {/* Decorative Corner Accent */}
                                 <div className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-indigo-200/20 to-transparent rounded-tl-full" />
                               </li>
                             ))}
@@ -604,38 +604,6 @@ export default function StudyPage() {
               </>
             )}
           </div>
-
-          {/* Mastery Progress Sidebar - Secondary */}
-          <aside className="order-2">
-            <div className="bg-white/90 rounded-2xl shadow-lg p-6 sticky top-28">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Mastery Progress</h2>
-              {words.length === 0 ? (
-                <p className="text-sm text-gray-500">Select a set to see your progress.</p>
-              ) : (
-                <div className="space-y-3">
-                  {(Object.entries(MASTERY_LABELS) as Array<[string, string]>).map(([levelKey, label]) => {
-                    const level = Number(levelKey) as MasteryLevel;
-                    const count = masterySummary[level];
-                    const color = MASTERY_COLORS[level];
-                    return (
-                      <div key={levelKey} className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
-                        <span className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-1 rounded-full ${color}`}>
-                          {label}
-                        </span>
-                        <span className="text-lg font-bold text-gray-700">{count}</span>
-                      </div>
-                    );
-                  })}
-                  <div className="pt-3 mt-3 border-t border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-600">Total Words</span>
-                      <span className="text-lg font-bold text-gray-900">{words.length}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </aside>
         </div>
       </div>
 
@@ -655,9 +623,11 @@ export default function StudyPage() {
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <h2 className="text-2xl font-bold text-gray-900 truncate">{currentWord.word}</h2>
-                  <p className="text-sm text-purple-600 font-medium mt-0.5">
-                    Example {selectedExampleIndex + 1} of {currentExamples.length}
-                  </p>
+                  {currentWord.definition && (
+                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                      {currentWord.definition}
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={handleCloseImageModal}
@@ -735,20 +705,20 @@ export default function StudyPage() {
                             ? 'border-green-300 bg-green-50 text-green-700 hover:border-green-400'
                             : 'border-gray-200 bg-white text-gray-500 hover:border-purple-300'
                         } ${example ? '' : 'opacity-40 cursor-not-allowed'} ${
-                          isGenerating ? 'ring-2 ring-purple-400 ring-offset-2' : ''
+                          isGenerating ? 'animate-pulse border-purple-400 bg-purple-100' : ''
                         }`}
                       >
-                        <span className="text-xl font-bold">{idx + 1}</span>
-                        {hasImage && !isSelected && (
-                          <span className="absolute top-1 right-1 text-xs">✓</span>
-                        )}
+                        <span className={`text-xl font-bold ${isGenerating ? 'animate-bounce' : ''}`}>{idx + 1}</span>
                         {isGenerating && (
-                          <div className="absolute -top-1 -right-1">
-                            <span className="flex h-3 w-3">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
-                            </span>
-                          </div>
+                          <>
+                            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-400/20 to-indigo-400/20 animate-pulse" />
+                            <div className="absolute -top-1 -right-1">
+                              <span className="flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                              </span>
+                            </div>
+                          </>
                         )}
                       </button>
                     );
@@ -756,26 +726,11 @@ export default function StudyPage() {
                 </div>
               </div>
 
-              {/* Status Messages */}
-              {(imageGenerationError || imageGenerationNotice || currentQueueLabels.length > 0) && (
-                <div className="space-y-2">
-                  {imageGenerationError && (
-                    <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
-                      <span className="text-lg">⚠️</span>
-                      <p>{imageGenerationError}</p>
-                    </div>
-                  )}
-                  {imageGenerationNotice && (
-                    <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 flex items-start gap-2">
-                      <span className="text-lg">✓</span>
-                      <p>{imageGenerationNotice}</p>
-                    </div>
-                  )}
-                  {currentQueueLabels.length > 0 && (
-                    <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3 text-sm text-purple-700">
-                      <p className="font-semibold">Generating: {currentQueueLabels.join(', ')}</p>
-                    </div>
-                  )}
+              {/* Error Message Only */}
+              {imageGenerationError && (
+                <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+                  <span className="text-lg">⚠️</span>
+                  <p>{imageGenerationError}</p>
                 </div>
               )}
 
