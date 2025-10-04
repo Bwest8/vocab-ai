@@ -17,6 +17,7 @@ interface MultipleChoiceQuestion {
   id: string;
   prompt: string;
   definition: string;
+  teacherDefinition: string | null;
   word: string;
   options: string[];
   mastery: number;
@@ -67,16 +68,17 @@ const buildMultipleChoiceQuestions = (
       safePool.filter((candidate) => candidate.id !== word.id)
     )
       .slice(0, 3)
-      .map((candidate) => (projector === "definition" ? candidate.definition : candidate.word));
+      .map((candidate) => (projector === "definition" ? (candidate.teacherDefinition || candidate.definition) : candidate.word));
 
     const masteryLevel = toMasteryLevel(word.progress?.find((item) => item.userId == null)?.masteryLevel);
-    const correctOption = projector === "definition" ? word.word : word.definition;
+    const correctOption = projector === "definition" ? word.word : (word.teacherDefinition || word.definition);
     const options = shuffle([correctOption, ...otherOptions]);
 
     return {
       id: word.id,
-      prompt: projector === "definition" ? word.definition : word.word,
-      definition: word.definition,
+      prompt: projector === "definition" ? (word.teacherDefinition || word.definition) : word.word,
+      definition: word.teacherDefinition || word.definition,
+      teacherDefinition: word.teacherDefinition,
       word: word.word,
       options,
       mastery: masteryLevel,
@@ -92,13 +94,13 @@ const createSentenceWithBlank = (word: WordWithRelations) => {
     return example.replace(regex, "_____");
   }
 
-  return `_____ (${word.partOfSpeech ?? "word"}) ${word.definition.toLowerCase()}.`;
+  return `_____ (${word.partOfSpeech ?? "word"}) ${(word.teacherDefinition || word.definition).toLowerCase()}.`;
 };
 
 const createExampleSentence = (word: WordWithRelations) => {
   const example = word.examples?.[0]?.sentence;
   if (example) return example;
-  return `In a sentence: "${word.word}" means ${word.definition.toLowerCase()}.`;
+  return `In a sentence: "${word.word}" means ${(word.teacherDefinition || word.definition).toLowerCase()}.`;
 };
 
 const useMultipleChoiceRun = (
@@ -129,7 +131,7 @@ const useMultipleChoiceRun = (
     const correct = mode === "reverse-definition" ? option === currentQuestion.definition : option === currentQuestion.word;
     setIsCorrect(correct);
     setFeedback(
-      correct ? "Nice work!" : `The correct answer was "${mode === "reverse-definition" ? currentQuestion.definition : currentQuestion.word}".`
+      correct ? "Nice work!" : `The correct answer was "${mode === "reverse-definition" ? (currentQuestion.teacherDefinition || currentQuestion.definition) : currentQuestion.word}".`
     );
 
     onResult({

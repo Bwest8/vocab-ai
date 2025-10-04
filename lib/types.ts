@@ -14,6 +14,7 @@ export interface VocabWord {
   id: string;
   word: string;
   definition: string;
+  teacherDefinition: string | null;
   pronunciation: string | null;
   partOfSpeech: string | null;
   vocabSetId: string;
@@ -64,6 +65,7 @@ export interface ProcessVocabRequest {
 export interface GeminiVocabResponse {
   WORD: string;
   DEFINITION: string;
+  TEACHER_DEFINITION: string;
   PRONUNCIATION: string;
   PART_OF_SPEECH: string;
   EXAMPLES: Array<{

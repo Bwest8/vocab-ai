@@ -32,6 +32,7 @@ model VocabWord {
   id              String            @id @default(cuid())
   word            String
   definition      String
+  teacherDefinition String?         // Original definition provided by teacher
   pronunciation   String?           // Phonetic pronunciation guide
   partOfSpeech    String?           // noun, verb, adjective, etc.
   vocabSetId      String

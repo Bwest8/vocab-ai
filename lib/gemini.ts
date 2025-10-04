@@ -76,6 +76,7 @@ export async function processVocabularyWords(rawText: string): Promise<GeminiVoc
       z.object({
         WORD: z.string(),
         DEFINITION: z.string().describe('A clear, concise, student-friendly definition in one sentence'),
+        TEACHER_DEFINITION: z.string().describe('The original definition provided by the teacher in the input text'),
         PRONUNCIATION: z.string().describe('Simple, syllable-based pronunciation guide (e.g., "EN-vuh-lope")'),
         PART_OF_SPEECH: z.string().describe('noun | verb | adjective | adverb | etc.'),
         EXAMPLES: z.array(
@@ -100,6 +101,7 @@ ${rawText}
 For each word you find, provide:
 - WORD: the vocabulary word (extract it from the input text)
 - DEFINITION: a clear, precise definition in one sentence that a 10-12 year old can understand. Use grade-appropriate language but don't oversimplify.
+- TEACHER_DEFINITION: the exact definition provided by the teacher in the input text (extract it verbatim)
 - PRONUNCIATION: a simple, syllable-based pronunciation guide with capitalized stressed syllables (like "en-VEL-ope" or "FLAW-less-lee")
 - PART_OF_SPEECH: noun | verb | adjective | adverb | etc.
 - EXAMPLES: exactly 5 distinct, engaging example sentences that demonstrate different contexts and uses of the word

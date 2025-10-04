@@ -55,6 +55,7 @@ export async function POST(request: Request) {
           data: {
             word: aiResult.WORD,
             definition: aiResult.DEFINITION,
+            teacherDefinition: aiResult.TEACHER_DEFINITION,
             pronunciation: aiResult.PRONUNCIATION,
             partOfSpeech: aiResult.PART_OF_SPEECH,
             vocabSetId: vocabSet.id,
