@@ -22,6 +22,7 @@ model VocabSet {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   words       VocabWord[]
+  gameProgress GameModeProgress[]
   
   @@map("vocab_sets")
 }
@@ -76,4 +77,41 @@ model StudyProgress {
   @@unique([wordId, userId])
   @@index([wordId])
   @@index([userId])
+}
+
+model GameProfile {
+  id                 String              @id @default(cuid())
+  profileKey         String              @unique @map("profile_key")
+  points             Int                 @default(0)
+  questionsAttempted Int                 @default(0) @map("questions_attempted")
+  questionsCorrect   Int                 @default(0) @map("questions_correct")
+  streak             Int                 @default(0)
+  currentCombo       Int                 @default(0) @map("current_combo")
+  bestCombo          Int                 @default(0) @map("best_combo")
+  lastPlayedAt       DateTime?           @map("last_played_at")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  modeProgress       GameModeProgress[]
+
+  @@map("game_profiles")
+}
+
+model GameModeProgress {
+  id           String      @id @default(cuid())
+  profileId    String      @map("profile_id")
+  profile      GameProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  vocabSetId   String      @map("vocab_set_id")
+  vocabSet     VocabSet    @relation(fields: [vocabSetId], references: [id], onDelete: Cascade)
+  mode         String      @db.VarChar(40)
+  attempted    Int         @default(0)
+  correct      Int         @default(0)
+  lastPlayedAt DateTime?   @map("last_played_at")
+  completedAt  DateTime?   @map("completed_at")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  @@map("game_mode_progress")
+  @@unique([profileId, vocabSetId, mode])
+  @@index([vocabSetId])
+  @@index([profileId])
 }
