@@ -216,11 +216,11 @@ export function StudyFlashcard({
 
         {/* Answer Section */}
         {showDetails && (
-          <div className="border-t border-slate-200 bg-white/50">
+          <div className="border-t-2 border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-white">
             <div className="p-8 md:p-10 space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Definition</h3>
+              <div className="bg-white rounded-xl border-2 border-indigo-300 p-6 shadow-md">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-bold uppercase tracking-wide text-indigo-700">Definition</h3>
                   <button
                     onClick={() => speak(currentWord.definition)}
                     disabled={isSpeaking}
@@ -233,7 +233,7 @@ export function StudyFlashcard({
                     </svg>
                   </button>
                 </div>
-                <p className="text-lg leading-relaxed text-slate-700">{currentWord.definition}</p>
+                <p className="text-xl leading-relaxed text-slate-900 font-medium">{currentWord.definition}</p>
               </div>
 
               {currentExamples.length > 0 && (

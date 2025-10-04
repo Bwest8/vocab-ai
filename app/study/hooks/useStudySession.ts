@@ -84,9 +84,23 @@ export function useStudySession(): UseStudySessionResult {
         setVocabSets(sets);
 
         if (sets.length > 0) {
-          const firstSet = sets[0];
-          setSelectedSetId(firstSet.id);
-          setSelectedSetName(firstSet.name);
+          // Find the vocab set with the highest lesson number
+          const latestSet = sets.reduce((latest, current) => {
+            // Extract lesson number from name (e.g., "Lesson 1" -> 1)
+            const currentMatch = current.name.match(/lesson\s+(\d+)/i);
+            const latestMatch = latest.name.match(/lesson\s+(\d+)/i);
+            
+            if (!currentMatch) return latest;
+            if (!latestMatch) return current;
+            
+            const currentNum = parseInt(currentMatch[1], 10);
+            const latestNum = parseInt(latestMatch[1], 10);
+            
+            return currentNum > latestNum ? current : latest;
+          }, sets[0]);
+          
+          setSelectedSetId(latestSet.id);
+          setSelectedSetName(latestSet.name);
         }
 
         setSetState("idle");
