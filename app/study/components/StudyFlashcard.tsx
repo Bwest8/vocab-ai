@@ -1,6 +1,9 @@
+'use client';
 import { MASTERY_COLORS, MASTERY_LABELS, type MasteryLevel } from "@/lib/types";
 import { toMasteryLevel } from "@/lib/study/utils";
 import type { FetchState, WordWithRelations } from "@/lib/study/types";
+import { useState } from 'react';
+
 
 interface StudyFlashcardProps {
   words: WordWithRelations[];
@@ -32,6 +35,40 @@ export function StudyFlashcard({
   onSelectWord,
 }: StudyFlashcardProps) {
   const currentExamples = currentWord?.examples ?? [];
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const speak = async (text: string) => {
+    if (isSpeaking) return;
+
+    setIsSpeaking(true);
+    try {
+      // Use our cached TTS API endpoint
+      const voiceId = '67oeJmj7jIMsdE6yXPr5'; // Current voice ID
+      const response = await fetch(`/api/tts?text=${encodeURIComponent(text)}&voiceId=${voiceId}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to get audio');
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audioElement = new Audio(audioUrl);
+      await audioElement.play();
+
+      // Clean up the URL after playing
+      audioElement.onended = () => URL.revokeObjectURL(audioUrl);
+
+    } catch (error) {
+      console.error('TTS Error:', error);
+      // Fallback to Web Speech API if our API fails
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        speechSynthesis.speak(utterance);
+      }
+    } finally {
+      setIsSpeaking(false);
+    }
+  };
 
   if (words.length === 0) {
     return (
@@ -110,7 +147,17 @@ export function StudyFlashcard({
         <div className="absolute -right-24 -top-20 h-64 w-64 rounded-full bg-pink-200/20 blur-3xl" aria-hidden="true" />
         <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
           <div className="max-w-xl">
-            <h2 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">{currentWord.word}</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">{currentWord.word}</h2>
+              <button
+                onClick={() => speak(currentWord.word)}
+                disabled={isSpeaking}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Speak word"
+              >
+                {isSpeaking ? '⏳' : '🔊'}
+              </button>
+            </div>
             {currentWord.pronunciation && (
               <p className="mt-2 text-lg font-medium text-slate-500">{currentWord.pronunciation}</p>
             )}
@@ -144,7 +191,17 @@ export function StudyFlashcard({
         {showDetails && (
           <div className="relative mt-10 space-y-6">
             <div className="rounded-3xl bg-white/80 p-6 shadow-sm shadow-indigo-100/60 backdrop-blur">
-              <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-400">Definition</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-400">Definition</h3>
+                <button
+                  onClick={() => speak(currentWord.definition)}
+                  disabled={isSpeaking}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Speak definition"
+                >
+                  {isSpeaking ? '⏳' : '🔊'}
+                </button>
+              </div>
               <p className="mt-4 text-lg leading-relaxed text-slate-800 md:text-xl">{currentWord.definition}</p>
             </div>
 
