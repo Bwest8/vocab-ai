@@ -68,7 +68,7 @@ const buildMultipleChoiceQuestions = (
       safePool.filter((candidate) => candidate.id !== word.id)
     )
       .slice(0, 3)
-      .map((candidate) => (projector === "definition" ? (candidate.teacherDefinition || candidate.definition) : candidate.word));
+      .map((candidate) => (projector === "definition" ? candidate.word : (candidate.teacherDefinition || candidate.definition)));
 
     const masteryLevel = toMasteryLevel(word.progress?.find((item) => item.userId == null)?.masteryLevel);
     const correctOption = projector === "definition" ? word.word : (word.teacherDefinition || word.definition);
@@ -464,7 +464,7 @@ export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult }:
       .slice(0, 3)
       .map((word) => word.word);
     return {
-      prompt: currentWord.definition,
+      prompt: currentWord.teacherDefinition || currentWord.definition,
       correct: currentWord.word,
       options: shuffle([currentWord.word, ...options]),
     };
@@ -596,7 +596,7 @@ export function SpellingGame({ weeklyWords, reviewWords, allWords, onResult }: B
   return (
     <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-rose-100/70 backdrop-blur-sm">
       <p className="text-xs uppercase tracking-wide text-rose-600">Definition</p>
-      <p className="mt-2 text-lg font-medium text-slate-900">{current.definition}</p>
+      <p className="mt-2 text-lg font-medium text-slate-900">{current.teacherDefinition || current.definition}</p>
       {current.pronunciation && (
         <p className="mt-1 text-sm text-slate-500">Pronunciation: {current.pronunciation}</p>
       )}

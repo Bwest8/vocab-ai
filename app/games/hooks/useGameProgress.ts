@@ -165,6 +165,8 @@ export function useGameProgress(vocabSetId: string | null | undefined) {
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Response error:", errorText);
           throw new Error("Failed to record game progress");
         }
 
