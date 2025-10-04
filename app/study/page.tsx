@@ -42,7 +42,7 @@ export default function StudyPage() {
   } = useStudySession();
 
   return (
-    <div className="relative min-h-[100svh] bg-gradient-to-br from-[#eef3ff] via-[#f8f2ff] to-[#ffe8f3] pb-28 pt-6">
+    <div className="relative min-h-[100svh] bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 pb-28 pt-6">
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 sm:px-6 lg:px-8">
         <StudyHeader
           vocabSets={vocabSets}

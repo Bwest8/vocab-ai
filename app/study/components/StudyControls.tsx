@@ -17,24 +17,24 @@ export function StudyControls({
 }: StudyControlsProps) {
   return (
     <div
-      className={`flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between ${className}`.trim()}
+      className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between ${className}`.trim()}
     >
       <div className="flex items-center justify-center gap-3 sm:justify-start">
         <button
           type="button"
           onClick={onPrevious}
-          className="flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-5 py-3 text-base font-semibold text-indigo-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         >
-          <span className="text-xl">‹</span>
+          <span className="text-lg">‹</span>
           Previous
         </button>
         <button
           type="button"
           onClick={onNext}
-          className="flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-5 py-3 text-base font-semibold text-indigo-600 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         >
           Next
-          <span className="text-xl">›</span>
+          <span className="text-lg">›</span>
         </button>
       </div>
 
@@ -43,17 +43,17 @@ export function StudyControls({
           type="button"
           onClick={onMarkIncorrect}
           disabled={disabled}
-          className="flex min-w-[11rem] items-center justify-center gap-2 rounded-full border-2 border-rose-300 bg-white px-6 py-3 text-base font-semibold text-rose-500 shadow-sm transition hover:border-rose-400 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex min-w-[11rem] items-center justify-center gap-2 rounded-lg border-2 border-rose-300 bg-white px-6 py-2.5 text-sm font-semibold text-rose-600 shadow-sm transition hover:border-rose-400 hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          I Need Practice
+          Need Practice
         </button>
         <button
           type="button"
           onClick={onMarkCorrect}
           disabled={disabled}
-          className="flex min-w-[11rem] items-center justify-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-emerald-400/40 transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex min-w-[11rem] items-center justify-center gap-2 rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          I Knew It
+          I Know This
         </button>
       </div>
     </div>
