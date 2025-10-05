@@ -84,7 +84,6 @@ export default function GamesPage() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-center sm:text-left">
-            <div className="text-4xl md:text-5xl mb-2">🎮</div>
             <p className="text-sm md:text-base uppercase tracking-wide text-indigo-600 font-semibold">Weekly word adventures</p>
             <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mt-1">Games Lab</h1>
             <p className="mt-3 text-base md:text-lg text-slate-600 max-w-2xl">

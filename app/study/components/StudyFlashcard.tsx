@@ -236,6 +236,32 @@ export function StudyFlashcard({
                 <p className="text-xl leading-relaxed text-slate-900 font-medium">{currentWord.definition}</p>
               </div>
 
+              {/* Teacher Definition Admonition */}
+              {currentWord.teacherDefinition && (
+                <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl border-2 border-amber-300 p-6 shadow-md">
+                  <div className="flex items-start gap-3 mb-3">
+
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-base font-bold uppercase tracking-wide text-amber-800">Teacher's Definition</h3>
+                        <button
+                          onClick={() => speak(currentWord.teacherDefinition || '')}
+                          disabled={isSpeaking}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          aria-label="Speak teacher definition"
+                          title="Listen to teacher's explanation"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                          </svg>
+                        </button>
+                      </div>
+                      <p className="text-lg leading-relaxed text-amber-950 font-medium">{currentWord.teacherDefinition}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {currentExamples.length > 0 && (
                 <div>
                   <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-4">

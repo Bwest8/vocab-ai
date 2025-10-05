@@ -73,25 +73,26 @@ Armor, n`;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 py-6 px-4">
-      <div className="max-w-3xl mx-auto space-y-6">
+    <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-4 md:pt-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <header className="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-            Create Vocabulary Set
-          </h1>
-          <p className="text-sm text-slate-600 mt-1">
-            Build a complete learning experience from your word list
-          </p>
+        <header className="flex flex-col gap-4">
+          <div className="text-center sm:text-left">
+            <p className="text-sm md:text-base uppercase tracking-wide text-indigo-600 font-semibold">Build your collection</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mt-1">Create Vocabulary Set</h1>
+            <p className="mt-3 text-base md:text-lg text-slate-600 max-w-2xl">
+              Build a complete learning experience from your word list. AI will add definitions, pronunciations, and example sentences.
+            </p>
+          </div>
         </header>
 
         {/* Main Form Card */}
-        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200 p-5 md:p-6">
+        <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-lg p-5 md:p-6">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Set Information */}
             <div className="space-y-4">
               <div>
-                <label htmlFor="vocabSetName" className="block text-sm font-semibold text-slate-700 mb-2">
+                <label htmlFor="vocabSetName" className="block text-sm font-bold text-slate-700 mb-2">
                   Set Name <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -101,13 +102,13 @@ Armor, n`;
                   onChange={(e) => setVocabSetName(e.target.value)}
                   placeholder="e.g., Lesson 4, Week 1, Chapter 3"
                   required
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-slate-900 placeholder-slate-400 transition-all"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-slate-900 placeholder-slate-400 transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="grade" className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label htmlFor="grade" className="block text-sm font-bold text-slate-700 mb-2">
                     Grade Level
                   </label>
                   <input
@@ -116,12 +117,12 @@ Armor, n`;
                     value={grade}
                     onChange={(e) => setGrade(e.target.value)}
                     placeholder="e.g., 5th Grade"
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-slate-900 placeholder-slate-400 transition-all"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-slate-900 placeholder-slate-400 transition-all"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="description" className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label htmlFor="description" className="block text-sm font-bold text-slate-700 mb-2">
                     Description
                   </label>
                   <input
@@ -130,7 +131,7 @@ Armor, n`;
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Optional"
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-slate-900 placeholder-slate-400 transition-all"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-slate-900 placeholder-slate-400 transition-all"
                   />
                 </div>
               </div>
@@ -138,7 +139,7 @@ Armor, n`;
 
             {/* Divider */}
             <div className="border-t border-slate-200 pt-5">
-              <label htmlFor="rawText" className="block text-sm font-semibold text-slate-700 mb-2">
+              <label htmlFor="rawText" className="block text-sm font-bold text-slate-700 mb-2">
                 Vocabulary Words <span className="text-rose-500">*</span>
               </label>
               <p className="text-xs text-slate-500 mb-3">
@@ -151,7 +152,7 @@ Armor, n`;
                 placeholder="Aspiring, adj&#10;Rival, adj&#10;Siege, n&#10;Transform, v"
                 required
                 rows={12}
-                className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none font-mono text-sm text-slate-900 placeholder-slate-400 resize-none transition-all"
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none font-mono text-sm text-slate-900 placeholder-slate-400 resize-none transition-all"
               />
             </div>
 
@@ -160,7 +161,7 @@ Armor, n`;
               <button
                 type="submit"
                 disabled={isProcessing}
-                className="flex-1 bg-indigo-600 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md disabled:shadow-none"
+                className="flex-1 bg-indigo-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg disabled:shadow-none"
               >
                 {isProcessing ? (
                   <span className="flex items-center justify-center gap-2">
@@ -168,7 +169,7 @@ Armor, n`;
                     Processing...
                   </span>
                 ) : (
-                  'Create Set'
+                  '✨ Create Set'
                 )}
               </button>
 
@@ -176,7 +177,7 @@ Armor, n`;
                 type="button"
                 onClick={loadExample}
                 disabled={isProcessing}
-                className="px-6 py-2.5 border border-slate-200 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-3 border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
               >
                 Load Example
               </button>
@@ -186,11 +187,11 @@ Armor, n`;
 
         {/* Error Message */}
         {error && (
-          <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-6">
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-md">
             <div className="flex items-start gap-3">
-              <span className="text-xl">⚠️</span>
+              <span className="text-2xl">⚠️</span>
               <div className="flex-1">
-                <h3 className="font-semibold text-rose-900 text-sm">Error</h3>
+                <h3 className="font-bold text-rose-900 text-base">Error</h3>
                 <p className="text-sm text-rose-700 mt-1">{error}</p>
               </div>
             </div>
@@ -199,27 +200,27 @@ Armor, n`;
 
         {/* Success Result */}
         {result && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 mb-6">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-md">
             <div className="flex items-start gap-3 mb-4">
-              <span className="text-2xl">✓</span>
+              <span className="text-3xl">✓</span>
               <div className="flex-1">
-                <h3 className="font-bold text-emerald-900 text-lg">Success!</h3>
-                <p className="text-sm text-emerald-700 mt-1">
+                <h3 className="font-bold text-emerald-900 text-xl">Success!</h3>
+                <p className="text-base text-emerald-700 mt-1">
                   Created vocabulary set with <strong>{result.processedWords}</strong> words.
                 </p>
               </div>
             </div>
 
             {result.vocabSet && (
-              <div className="bg-white rounded-lg p-4 border border-emerald-100">
+              <div className="bg-white rounded-xl p-5 border border-emerald-100">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-slate-500 font-medium">Set Name</p>
-                    <p className="text-slate-900 font-semibold">{result.vocabSet.name}</p>
+                    <p className="text-slate-500 font-semibold">Set Name</p>
+                    <p className="text-slate-900 font-bold text-base">{result.vocabSet.name}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500 font-medium">Total Words</p>
-                    <p className="text-slate-900 font-semibold">{result.vocabSet.words?.length || 0}</p>
+                    <p className="text-slate-500 font-semibold">Total Words</p>
+                    <p className="text-slate-900 font-bold text-base">{result.vocabSet.words?.length || 0}</p>
                   </div>
                 </div>
               </div>
@@ -228,8 +229,8 @@ Armor, n`;
         )}
 
         {/* Instructions */}
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6">
-          <h2 className="font-bold text-indigo-900 text-lg mb-4">How It Works</h2>
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 shadow-md">
+          <h2 className="font-bold text-indigo-900 text-xl mb-4">How It Works</h2>
           <ol className="space-y-3 text-sm text-indigo-900">
             <li className="flex gap-3">
               <span className="font-bold flex-shrink-0">1.</span>
