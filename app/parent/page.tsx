@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
-import type { GameMode } from "@/lib/games/types";
-import { useGamesSession } from "@/app/games/hooks/useGamesSession";
-import { useGameProgress } from "@/app/games/hooks/useGameProgress";
+import { useMemo, useState } from "react";
+import type { GameMode } from "@/lib/types";
+import { useGamesSession } from "@/lib/hooks/useGamesSession";
+import { useGameProgress } from "@/lib/hooks/useGameProgress";
 
 const MODE_LABELS: Record<GameMode, string> = {
   "definition-match": "Definition Match",
@@ -41,6 +41,7 @@ export default function ParentDashboardPage() {
   } = useGamesSession();
 
   const progress = useGameProgress(selectedSetId || null);
+  const [isResetting, setIsResetting] = useState(false);
 
   const completionRate = useMemo(() => {
     if (progress.questionsAttempted === 0) {
@@ -48,6 +49,33 @@ export default function ParentDashboardPage() {
     }
     return Math.round((progress.questionsCorrect / progress.questionsAttempted) * 100);
   }, [progress.questionsAttempted, progress.questionsCorrect]);
+
+  const handleResetProgress = async () => {
+    if (!selectedSetId || !confirm(`Are you sure you want to reset all weekly practice progress for "${selectedSetName}"? This cannot be undone.`)) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const response = await fetch(`/api/games/progress?vocabSetId=${selectedSetId}&profileKey=default`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        alert('Weekly practice progress has been reset successfully.');
+        // Refresh the progress
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(`Failed to reset progress: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error resetting progress:', error);
+      alert('An error occurred while resetting progress.');
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   return (
     <div className="min-h-[100svh] bg-gradient-to-br from-slate-50 via-indigo-50 to-white pb-20 pt-8">
@@ -74,7 +102,18 @@ export default function ParentDashboardPage() {
                   </option>
                 ))}
               </select>
-              <span className="text-xs text-slate-400">{progress.isLoading ? "Refreshing progress…" : "Last updated moments ago"}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">{progress.isLoading ? "Refreshing progress…" : "Last updated moments ago"}</span>
+                {selectedSetId && (
+                  <button
+                    onClick={handleResetProgress}
+                    disabled={isResetting}
+                    className="rounded-2xl bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600 disabled:opacity-50"
+                  >
+                    {isResetting ? 'Resetting...' : 'Reset Progress'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

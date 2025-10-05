@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { GameMode } from "@/lib/types";
 import { DefinitionMatchGame, ExampleSentenceGame, FillInTheBlankGame, ReverseDefinitionGame, SpeedRoundGame, SpellingGame } from "@/app/components/GameModes";
-import { GameDashboard } from "@/app/components/GameDashboard";
 import { GameModeSelector } from "@/app/components/GameModeSelector";
 import { useGamesSession } from "@/lib/hooks/useGamesSession";
 import { useGameProgress } from "@/lib/hooks/useGameProgress";
+import Modal from 'react-modal';
 
 const schedule: Array<{ day: string; focus: string; mode: GameMode; description: string }> = [
   { day: "Day 1", focus: "Definition Match", mode: "definition-match", description: "Preview new words and match meanings." },
@@ -35,18 +35,26 @@ export default function GamesPage() {
   } = useGamesSession();
 
   const progress = useGameProgress(selectedSetId || null);
-  const [selectedMode, setSelectedMode] = useState<GameMode>("definition-match");
+  const [selectedMode, setSelectedMode] = useState<GameMode | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [gameKey, setGameKey] = useState(0);
+
+  useEffect(() => {
+    Modal.setAppElement(document.body);
+  }, []);
 
   const isLoading = setState === "loading" || wordsState === "loading";
 
   const masteryReady = progress.completedModes.size >= 6;
 
   const modeComponent = useMemo(() => {
+    if (!selectedMode) return null;
     const commonProps = {
       weeklyWords,
       reviewWords,
       allWords: words,
       onResult: progress.registerResult,
+      gameKey,
     } as const;
 
     switch (selectedMode) {
@@ -65,6 +73,17 @@ export default function GamesPage() {
         return <ExampleSentenceGame {...commonProps} />;
     }
   }, [weeklyWords, reviewWords, words, progress.registerResult, selectedMode]);
+
+  const handleModeSelect = (mode: GameMode) => {
+    setSelectedMode(mode);
+    setGameKey(Math.random());
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedMode(null);
+  };
 
   return (
     <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-6">
@@ -100,19 +119,6 @@ export default function GamesPage() {
           </div>
         )}
 
-        <GameDashboard
-          selectedSetName={selectedSetName}
-          points={progress.points}
-          stars={progress.stars}
-          accuracy={progress.accuracy}
-          combo={progress.combo}
-          bestCombo={progress.bestCombo}
-          streak={progress.streak}
-          weeklyMastery={weeklyMastery}
-          weeklySchedule={schedule}
-          completedModes={progress.completedModes}
-        />
-
         {progress.error && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
             {progress.error}
@@ -132,50 +138,25 @@ export default function GamesPage() {
             </div>
 
             <GameModeSelector
-              selectedMode={selectedMode}
+              selectedMode={selectedMode || "definition-match"}
               modeStats={progress.modeStats}
-              onSelect={setSelectedMode}
+              onSelect={handleModeSelect}
             />
           </div>
-
-          {modeComponent}
-
-          {masteryReady && (
-            <div className="rounded-3xl border border-indigo-200 bg-indigo-50 p-6 shadow-md shadow-indigo-100">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-indigo-600">Weekly mastery test unlocked</p>
-                  <h3 className="text-xl font-semibold text-slate-900">Review last week&apos;s words with a custom quiz</h3>
-                  <p className="mt-1 text-sm text-slate-600">
-                    You&apos;ve completed all six modes—keep the streak going by replaying your toughest games or inviting a grown-up to view the parent dashboard.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:scale-[1.02]"
-                  onClick={() => setSelectedMode("speed-round")}
-                >
-                  Launch review challenge
-                </button>
-              </div>
-            </div>
-          )}
         </section>
 
-        <section className="rounded-3xl border border-white/80 bg-white/95 p-6 shadow-lg shadow-indigo-100/70 backdrop-blur-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Parent insights</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Share daily progress with caregivers: streaks, accuracy, and favorite modes are ready for the upcoming parent dashboard. For now, export a quick summary from the Manage tab or replay games together for bonus points.
-          </p>
-          <div className="mt-4">
-            <Link
-              href="/parent"
-              className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-slate-800 to-slate-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:scale-[1.02] focus:outline-none focus-visible:ring focus-visible:ring-slate-300"
-            >
-              Open parent dashboard
-            </Link>
+        <Modal
+          isOpen={isModalOpen}
+          onRequestClose={closeModal}
+          className="modal-content"
+          overlayClassName="modal-overlay"
+          shouldCloseOnOverlayClick={false}
+        >
+          <div key={gameKey} className="p-4">
+            {modeComponent}
+            <button onClick={closeModal} className="absolute top-4 right-4 text-2xl">✕</button>
           </div>
-        </section>
+        </Modal>
       </div>
     </div>
   );

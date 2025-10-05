@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { GameMode, GameProfileResponse, GameResultPayload, ModeStats as SharedModeStats } from "@/lib/games/types";
+import type { GameMode, GameProfileResponse, GameResultPayload, ModeStats as SharedModeStats } from "@/lib/types";
 
 const GAME_MODES: GameMode[] = [
   "definition-match",

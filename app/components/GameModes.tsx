@@ -3,14 +3,15 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { WordWithRelations } from "@/lib/study/types";
 import { toMasteryLevel } from "@/lib/study/utils";
-import type { GameMode } from "@/lib/games/types";
-import type { GameResult } from "../hooks/useGameProgress";
+import type { GameMode } from "@/lib/types";
+import type { GameResult } from "@/lib/hooks/useGameProgress";
 
 interface BaseGameProps {
   weeklyWords: WordWithRelations[];
   reviewWords: WordWithRelations[];
   allWords: WordWithRelations[];
   onResult: (result: GameResult) => void;
+  gameKey: number;
 }
 
 interface MultipleChoiceQuestion {
@@ -68,7 +69,7 @@ const buildMultipleChoiceQuestions = (
       safePool.filter((candidate) => candidate.id !== word.id)
     )
       .slice(0, 3)
-      .map((candidate) => (projector === "definition" ? (candidate.teacherDefinition || candidate.definition) : candidate.word));
+      .map((candidate) => (projector === "definition" ? candidate.word : (candidate.teacherDefinition || candidate.definition)));
 
     const masteryLevel = toMasteryLevel(word.progress?.find((item) => item.userId == null)?.masteryLevel);
     const correctOption = projector === "definition" ? word.word : (word.teacherDefinition || word.definition);
@@ -166,11 +167,12 @@ const useMultipleChoiceRun = (
   } as const;
 };
 
-export function DefinitionMatchGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
-  const optionPool = useMemo(() => getOptionPool(weeklyWords, reviewWords, allWords), [weeklyWords, reviewWords, allWords]);
+export function DefinitionMatchGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
+  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords, gameKey]);
+  const optionPool = useMemo(() => getOptionPool(shuffledWords, reviewWords, allWords), [shuffledWords, reviewWords, allWords]);
   const questions = useMemo(
-    () => buildMultipleChoiceQuestions(weeklyWords, optionPool, "definition"),
-    [weeklyWords, optionPool]
+    () => buildMultipleChoiceQuestions(shuffledWords, optionPool, "definition"),
+    [shuffledWords, optionPool]
   );
 
   const { currentQuestion, selectedOption, feedback, isCorrect, selectOption, skip } = useMultipleChoiceRun(
@@ -236,11 +238,12 @@ export function DefinitionMatchGame({ weeklyWords, reviewWords, allWords, onResu
   );
 }
 
-export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
-  const optionPool = useMemo(() => getOptionPool(weeklyWords, reviewWords, allWords), [weeklyWords, reviewWords, allWords]);
+export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
+  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords, gameKey]);
+  const optionPool = useMemo(() => getOptionPool(shuffledWords, reviewWords, allWords), [shuffledWords, reviewWords, allWords]);
   const questions = useMemo(
-    () => buildMultipleChoiceQuestions(weeklyWords, optionPool, "word"),
-    [weeklyWords, optionPool]
+    () => buildMultipleChoiceQuestions(shuffledWords, optionPool, "word"),
+    [shuffledWords, optionPool]
   );
 
   const { currentQuestion, selectedOption, feedback, isCorrect, selectOption, skip } = useMultipleChoiceRun(
@@ -306,10 +309,11 @@ export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onRe
   );
 }
 
-export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
-  const optionPool = useMemo(() => getOptionPool(weeklyWords, reviewWords, allWords), [weeklyWords, reviewWords, allWords]);
+export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
+  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords, gameKey]);
+  const optionPool = useMemo(() => getOptionPool(shuffledWords, reviewWords, allWords), [shuffledWords, reviewWords, allWords]);
   const questions = useMemo(() => {
-    return weeklyWords.map((word) => {
+    return shuffledWords.map((word) => {
       const sentence = createSentenceWithBlank(word);
       const otherOptions = shuffle(
         optionPool.filter((candidate) => candidate.id !== word.id)
@@ -324,7 +328,7 @@ export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResul
         options: shuffle([word.word, ...otherOptions]),
       };
     });
-  }, [weeklyWords, optionPool]);
+  }, [shuffledWords, optionPool]);
 
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -419,8 +423,8 @@ export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResul
   );
 }
 
-export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
-  const questionPool = useMemo(() => shuffle(getOptionPool(weeklyWords, reviewWords, allWords)), [weeklyWords, reviewWords, allWords]);
+export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
+  const questionPool = useMemo(() => shuffle(getOptionPool(weeklyWords, reviewWords, allWords)), [weeklyWords, reviewWords, allWords, gameKey]);
   const [isActive, setIsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [index, setIndex] = useState(0);
@@ -546,7 +550,7 @@ export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult }:
   );
 }
 
-export function SpellingGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
+export function SpellingGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
   const wordQueue = useMemo(() => {
     const combined = [...weeklyWords];
 
@@ -563,7 +567,7 @@ export function SpellingGame({ weeklyWords, reviewWords, allWords, onResult }: B
     });
 
     return shuffle(combined);
-  }, [weeklyWords, reviewWords, allWords]);
+  }, [weeklyWords, reviewWords, allWords, gameKey]);
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -629,10 +633,11 @@ export function SpellingGame({ weeklyWords, reviewWords, allWords, onResult }: B
   );
 }
 
-export function ExampleSentenceGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
-  const optionPool = useMemo(() => getOptionPool(weeklyWords, reviewWords, allWords), [weeklyWords, reviewWords, allWords]);
+export function ExampleSentenceGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
+  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords, gameKey]);
+  const optionPool = useMemo(() => getOptionPool(shuffledWords, reviewWords, allWords), [shuffledWords, reviewWords, allWords]);
   const questions = useMemo(() => {
-    const source = weeklyWords.length > 0 ? weeklyWords : optionPool;
+    const source = shuffledWords.length > 0 ? shuffledWords : optionPool;
     return source.map((word) => {
       const otherOptions = shuffle(optionPool.filter((candidate) => candidate.id !== word.id))
         .slice(0, 3)
@@ -645,7 +650,7 @@ export function ExampleSentenceGame({ weeklyWords, reviewWords, allWords, onResu
         options: shuffle([word.word, ...otherOptions]),
       };
     });
-  }, [weeklyWords, optionPool]);
+  }, [shuffledWords, optionPool]);
 
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
