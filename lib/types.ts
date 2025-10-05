@@ -125,9 +125,7 @@ export type GameMode =
   | "definition-match"
   | "reverse-definition"
   | "fill-in-the-blank"
-  | "speed-round"
-  | "spelling"
-  | "example-sentence";
+  | "speed-round";
 
 export interface ModeStats {
   attempted: number;

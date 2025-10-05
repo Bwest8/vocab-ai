@@ -10,8 +10,6 @@ const MODE_LABELS: Record<GameMode, string> = {
   "reverse-definition": "Reverse Mode",
   "fill-in-the-blank": "Fill in the Blank",
   "speed-round": "Speed Round",
-  spelling: "Spelling Challenge",
-  "example-sentence": "Context Clues",
 };
 
 const MODE_DESCRIPTIONS: Record<GameMode, string> = {
@@ -19,8 +17,6 @@ const MODE_DESCRIPTIONS: Record<GameMode, string> = {
   "reverse-definition": "Show the word first and choose the correct meaning.",
   "fill-in-the-blank": "Use context sentences to select the right word.",
   "speed-round": "Timed review that boosts confidence and recall.",
-  spelling: "Type the word after hearing its definition.",
-  "example-sentence": "Identify where vocabulary words appear in real sentences.",
 };
 
 const MODE_ORDER: GameMode[] = [
@@ -28,8 +24,6 @@ const MODE_ORDER: GameMode[] = [
   "reverse-definition",
   "fill-in-the-blank",
   "speed-round",
-  "spelling",
-  "example-sentence",
 ];
 
 export default function ParentDashboardPage() {

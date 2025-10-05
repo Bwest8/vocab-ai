@@ -8,8 +8,6 @@ const GAME_MODES: GameMode[] = [
   "reverse-definition",
   "fill-in-the-blank",
   "speed-round",
-  "spelling",
-  "example-sentence",
 ];
 
 const COMPLETION_THRESHOLD = 3;
@@ -20,8 +18,6 @@ const createInitialModeStats = (): Record<GameMode, SharedModeStats> => ({
   "reverse-definition": { attempted: 0, correct: 0 },
   "fill-in-the-blank": { attempted: 0, correct: 0 },
   "speed-round": { attempted: 0, correct: 0 },
-  spelling: { attempted: 0, correct: 0 },
-  "example-sentence": { attempted: 0, correct: 0 },
 });
 
 export type ModeStats = SharedModeStats;

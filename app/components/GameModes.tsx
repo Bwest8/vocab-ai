@@ -29,8 +29,6 @@ const POINTS: Record<GameMode, number> = {
   "reverse-definition": 12,
   "fill-in-the-blank": 14,
   "speed-round": 8,
-  spelling: 16,
-  "example-sentence": 10,
 };
 
 const shuffle = <T,>(array: T[]) => {
@@ -159,6 +157,8 @@ const useMultipleChoiceRun = (
 
   return {
     currentQuestion,
+    currentIndex: index,
+    totalQuestions: questions.length,
     selectedOption,
     feedback,
     isCorrect,
@@ -175,7 +175,7 @@ export function DefinitionMatchGame({ weeklyWords, reviewWords, allWords, onResu
     [shuffledWords, optionPool]
   );
 
-  const { currentQuestion, selectedOption, feedback, isCorrect, selectOption, skip } = useMultipleChoiceRun(
+  const { currentQuestion, currentIndex, totalQuestions, selectedOption, feedback, isCorrect, selectOption, skip } = useMultipleChoiceRun(
     questions,
     "definition-match",
     onResult
@@ -187,6 +187,36 @@ export function DefinitionMatchGame({ weeklyWords, reviewWords, allWords, onResu
 
   return (
     <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-indigo-100/70 backdrop-blur-sm">
+      {/* Progress Header */}
+      <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-indigo-50 px-5 py-4 border border-indigo-200">
+        <div className="flex items-center gap-3">
+          <div className="text-3xl">📖</div>
+          <div>
+            <h2 className="text-lg font-bold text-indigo-900">Definition Match</h2>
+            <p className="text-sm text-indigo-600">Word {currentIndex + 1} of {totalQuestions}</p>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex gap-1">
+            {Array.from({ length: totalQuestions }).map((_, idx) => (
+              <div
+                key={idx}
+                className={`h-2 w-2 rounded-full transition-all ${
+                  idx === currentIndex
+                    ? "bg-indigo-600 scale-125"
+                    : idx < currentIndex
+                    ? "bg-indigo-400"
+                    : "bg-indigo-200"
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-xs font-semibold text-indigo-700">
+            {Math.round(((currentIndex) / totalQuestions) * 100)}% Complete
+          </p>
+        </div>
+      </div>
+
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-wide text-indigo-600">Definition</p>
@@ -246,7 +276,7 @@ export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onRe
     [shuffledWords, optionPool]
   );
 
-  const { currentQuestion, selectedOption, feedback, isCorrect, selectOption, skip } = useMultipleChoiceRun(
+  const { currentQuestion, currentIndex, totalQuestions, selectedOption, feedback, isCorrect, selectOption, skip } = useMultipleChoiceRun(
     questions,
     "reverse-definition",
     onResult
@@ -258,6 +288,36 @@ export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onRe
 
   return (
     <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-purple-100/70 backdrop-blur-sm">
+      {/* Progress Header */}
+      <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-purple-50 px-5 py-4 border border-purple-200">
+        <div className="flex items-center gap-3">
+          <div className="text-3xl">🔄</div>
+          <div>
+            <h2 className="text-lg font-bold text-purple-900">Reverse Mode</h2>
+            <p className="text-sm text-purple-600">Word {currentIndex + 1} of {totalQuestions}</p>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex gap-1">
+            {Array.from({ length: totalQuestions }).map((_, idx) => (
+              <div
+                key={idx}
+                className={`h-2 w-2 rounded-full transition-all ${
+                  idx === currentIndex
+                    ? "bg-purple-600 scale-125"
+                    : idx < currentIndex
+                    ? "bg-purple-400"
+                    : "bg-purple-200"
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-xs font-semibold text-purple-700">
+            {Math.round(((currentIndex) / totalQuestions) * 100)}% Complete
+          </p>
+        </div>
+      </div>
+
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-wide text-purple-600">Word</p>
@@ -340,6 +400,7 @@ export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResul
   }, []);
 
   const current = questions[index];
+  const totalQuestions = questions.length;
 
   const choose = (option: string) => {
     if (!current || selected) return;
@@ -370,6 +431,36 @@ export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResul
 
   return (
     <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-emerald-100/70 backdrop-blur-sm">
+      {/* Progress Header */}
+      <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-emerald-50 px-5 py-4 border border-emerald-200">
+        <div className="flex items-center gap-3">
+          <div className="text-3xl">✍️</div>
+          <div>
+            <h2 className="text-lg font-bold text-emerald-900">Fill in the Blank</h2>
+            <p className="text-sm text-emerald-600">Word {index + 1} of {totalQuestions}</p>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex gap-1">
+            {Array.from({ length: totalQuestions }).map((_, idx) => (
+              <div
+                key={idx}
+                className={`h-2 w-2 rounded-full transition-all ${
+                  idx === index
+                    ? "bg-emerald-600 scale-125"
+                    : idx < index
+                    ? "bg-emerald-400"
+                    : "bg-emerald-200"
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-xs font-semibold text-emerald-700">
+            {Math.round(((index) / totalQuestions) * 100)}% Complete
+          </p>
+        </div>
+      </div>
+
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-wide text-emerald-600">Sentence</p>
@@ -494,13 +585,30 @@ export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult, g
 
   return (
     <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-amber-100/70 backdrop-blur-sm">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-amber-600">Rapid review</p>
-          <h3 className="text-2xl font-semibold text-slate-900">Answer as many as you can in 60 seconds!</h3>
+      {/* Progress Header */}
+      <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-amber-50 px-5 py-4 border border-amber-200">
+        <div className="flex items-center gap-3">
+          <div className="text-3xl">⚡️</div>
+          <div>
+            <h2 className="text-lg font-bold text-amber-900">Speed Round</h2>
+            <p className="text-sm text-amber-600">
+              {isActive ? `Question ${score.attempted + 1}` : "Ready to start!"}
+            </p>
+          </div>
         </div>
-        <div className="rounded-2xl bg-amber-50 px-4 py-2 text-center text-sm font-semibold text-amber-700">
-          Time left: {timeLeft}s
+        <div className="flex flex-col items-end gap-2">
+          <div className={`rounded-xl px-4 py-2 font-bold text-lg ${
+            timeLeft <= 10 && isActive 
+              ? "bg-rose-100 text-rose-700 animate-pulse" 
+              : "bg-amber-100 text-amber-700"
+          }`}>
+            ⏱️ {timeLeft}s
+          </div>
+          {isActive && (
+            <p className="text-xs font-semibold text-amber-700">
+              {score.correct}/{score.attempted} correct
+            </p>
+          )}
         </div>
       </div>
 
@@ -516,7 +624,7 @@ export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult, g
           <p className="text-sm text-slate-500">You&apos;ll face quick definition match questions with time bonuses for fast answers.</p>
           {score.attempted > 0 && (
             <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              Final score: {score.correct}/{score.attempted}
+              Final score: {score.correct}/{score.attempted} ({score.attempted > 0 ? Math.round((score.correct / score.attempted) * 100) : 0}%)
             </div>
           )}
         </div>
@@ -539,208 +647,11 @@ export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult, g
               </button>
             ))}
           </div>
-
-          <div className="mt-4 flex items-center gap-4 text-sm text-slate-500">
-            <span>Correct: {score.correct}</span>
-            <span>Attempted: {score.attempted}</span>
-          </div>
         </div>
       )}
     </div>
   );
 }
 
-export function SpellingGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
-  const wordQueue = useMemo(() => {
-    const combined = [...weeklyWords];
 
-    reviewWords.forEach((word) => {
-      if (!combined.some((item) => item.id === word.id)) {
-        combined.push(word);
-      }
-    });
 
-    allWords.forEach((word) => {
-      if (!combined.some((item) => item.id === word.id)) {
-        combined.push(word);
-      }
-    });
-
-    return shuffle(combined);
-  }, [weeklyWords, reviewWords, allWords, gameKey]);
-  const [index, setIndex] = useState(0);
-  const [input, setInput] = useState("");
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-
-  const current = wordQueue[index % wordQueue.length];
-
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!current || !input) return;
-
-    const guess = input.trim().toLowerCase();
-    const correct = guess === current.word.toLowerCase();
-
-    setFeedback(
-      correct
-        ? "Perfect spelling!"
-        : `Almost! The correct spelling is "${current.word}".`
-    );
-    setIsCorrect(correct);
-    onResult({ mode: "spelling", correct, pointsAwarded: correct ? POINTS.spelling : 0 });
-    setInput("");
-    setIndex((prev) => prev + 1);
-  };
-
-  if (!current) {
-    return <p className="rounded-2xl bg-white/80 p-6 text-center text-sm text-slate-500">Practice some study sessions first to unlock spelling!</p>;
-  }
-
-  return (
-    <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-rose-100/70 backdrop-blur-sm">
-      <p className="text-xs uppercase tracking-wide text-rose-600">Definition</p>
-      <p className="mt-2 text-lg font-medium text-slate-900">{current.definition}</p>
-      {current.pronunciation && (
-        <p className="mt-1 text-sm text-slate-500">Pronunciation: {current.pronunciation}</p>
-      )}
-
-      <form onSubmit={submit} className="mt-5 flex flex-col gap-3 sm:flex-row">
-        <input
-          type="text"
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          placeholder="Type the word here"
-          className="w-full rounded-2xl border border-rose-200 bg-white px-4 py-3 text-base outline-none transition focus:border-rose-400 focus:ring focus:ring-rose-200"
-        />
-        <button
-          type="submit"
-          className="rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-rose-200 transition hover:scale-[1.02]"
-        >
-          Check spelling
-        </button>
-      </form>
-
-      {feedback && (
-        <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold ${
-          isCorrect ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-600"
-        }`}
-        >
-          {feedback}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function ExampleSentenceGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
-  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords, gameKey]);
-  const optionPool = useMemo(() => getOptionPool(shuffledWords, reviewWords, allWords), [shuffledWords, reviewWords, allWords]);
-  const questions = useMemo(() => {
-    const source = shuffledWords.length > 0 ? shuffledWords : optionPool;
-    return source.map((word) => {
-      const otherOptions = shuffle(optionPool.filter((candidate) => candidate.id !== word.id))
-        .slice(0, 3)
-        .map((candidate) => candidate.word);
-
-      return {
-        id: word.id,
-        sentence: createExampleSentence(word),
-        correct: word.word,
-        options: shuffle([word.word, ...otherOptions]),
-      };
-    });
-  }, [shuffledWords, optionPool]);
-
-  const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const timeoutRef = useRef<number | null>(null);
-
-  useEffect(() => () => {
-    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
-  }, []);
-
-  const current = questions[index];
-
-  const choose = (option: string) => {
-    if (!current || selected) return;
-
-    setSelected(option);
-    const correct = option === current.correct;
-    setFeedback(correct ? "Context clues unlocked!" : `That sentence was describing "${current.correct}".`);
-
-    onResult({ mode: "example-sentence", correct, pointsAwarded: correct ? POINTS["example-sentence"] : 0 });
-
-    timeoutRef.current = window.setTimeout(() => {
-      setSelected(null);
-      setFeedback(null);
-      setIndex((prev) => (prev + 1) % questions.length);
-    }, 1500);
-  };
-
-  const skip = () => {
-    if (!current) return;
-    setSelected(null);
-    setFeedback(null);
-    setIndex((prev) => (prev + 1) % questions.length);
-  };
-
-  if (!current) {
-    return <p className="rounded-2xl bg-white/80 p-6 text-center text-sm text-slate-500">We&apos;ll add this mode once we have more context sentences.</p>;
-  }
-
-  return (
-    <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-slate-200/70 backdrop-blur-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-slate-600">Example sentence</p>
-          <p className="mt-2 text-lg font-medium text-slate-900">{current.sentence}</p>
-        </div>
-        <button
-          type="button"
-          onClick={skip}
-          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-slate-400 hover:text-slate-700"
-        >
-          Skip
-        </button>
-      </div>
-
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {current.options.map((option) => {
-          const isSelected = selected === option;
-          const correctOption = option === current.correct;
-          const stateClass = selected
-            ? correctOption
-              ? "border-emerald-400 bg-emerald-50"
-              : isSelected
-                ? "border-rose-400 bg-rose-50"
-                : "opacity-60"
-            : "hover:border-slate-200 hover:bg-slate-100";
-
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => choose(option)}
-              className={`rounded-2xl border px-5 py-4 text-left text-base font-semibold transition ${stateClass}`}
-            >
-              {option}
-            </button>
-          );
-        })}
-      </div>
-
-      {feedback && (
-        <div className={`mt-5 rounded-2xl border px-4 py-3 text-sm font-semibold ${
-          feedback.startsWith("Context")
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-            : "border-rose-200 bg-rose-50 text-rose-600"
-        }`}
-        >
-          {feedback}
-        </div>
-      )}
-    </div>
-  );
-}
