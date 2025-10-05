@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { GameMode } from "@/lib/games/types";
-import { DefinitionMatchGame, ExampleSentenceGame, FillInTheBlankGame, ReverseDefinitionGame, SpeedRoundGame, SpellingGame } from "./components/GameModes";
-import { GameDashboard } from "./components/GameDashboard";
-import { GameModeSelector } from "./components/GameModeSelector";
-import { useGamesSession } from "./hooks/useGamesSession";
-import { useGameProgress } from "./hooks/useGameProgress";
+import type { GameMode } from "@/lib/types";
+import { DefinitionMatchGame, ExampleSentenceGame, FillInTheBlankGame, ReverseDefinitionGame, SpeedRoundGame, SpellingGame } from "@/app/components/GameModes";
+import { GameDashboard } from "@/app/components/GameDashboard";
+import { GameModeSelector } from "@/app/components/GameModeSelector";
+import { useGamesSession } from "@/lib/hooks/useGamesSession";
+import { useGameProgress } from "@/lib/hooks/useGameProgress";
 
 const schedule: Array<{ day: string; focus: string; mode: GameMode; description: string }> = [
   { day: "Day 1", focus: "Definition Match", mode: "definition-match", description: "Preview new words and match meanings." },
@@ -120,24 +120,22 @@ export default function GamesPage() {
         )}
 
         <section className="space-y-6">
-          <div className="rounded-3xl border border-white/80 bg-white/95 p-6 shadow-lg shadow-indigo-100/70 backdrop-blur-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wide text-indigo-600">Choose a mode</p>
                 <h2 className="text-xl font-semibold text-slate-900">Mix and match to keep the week exciting</h2>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 sm:text-right">
                 Complete three correct answers in each mode to light up the schedule trail.
               </p>
             </div>
 
-            <div className="mt-5">
-              <GameModeSelector
-                selectedMode={selectedMode}
-                modeStats={progress.modeStats}
-                onSelect={setSelectedMode}
-              />
-            </div>
+            <GameModeSelector
+              selectedMode={selectedMode}
+              modeStats={progress.modeStats}
+              onSelect={setSelectedMode}
+            />
           </div>
 
           {modeComponent}
