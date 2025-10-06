@@ -1,6 +1,4 @@
-import { google } from '@ai-sdk/google';
-import { generateObject } from 'ai';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Modality } from '@google/genai';
 import mime from 'mime';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
@@ -12,36 +10,109 @@ import type { GeminiVocabResponse } from './types';
 // 1. Model Initialization & Configuration
 // =============================================================================
 
-// Initialize Gemini models for text/object generation (using AI SDK)
-export const geminiFlash = google('models/gemini-flash-latest');
-export const geminiImage = google('gemini-2.5-flash-image');
-
-const GEMINI_IMAGE_MODEL_ID = 'gemini-2.5-flash-image';
+const GEMINI_TEXT_MODEL_ID = 'models/gemini-2.5-flash';
+const GEMINI_IMAGE_MODEL_ID = 'models/gemini-2.5-flash-image';
 const GEMINI_IMAGE_BASE_PATH = path.join(process.cwd(), 'public', 'vocab-sets');
 
-let geminiImageClient: GoogleGenAI | null = null;
+// Single client for the entire module
+let genAIClient: GoogleGenAI | null = null;
 
-function getGeminiImageClient(): GoogleGenAI {
+function getGenAIClient(): GoogleGenAI {
   const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
   if (!apiKey) {
-    throw new Error('Missing GOOGLE_GENERATIVE_AI_API_KEY environment variable for Gemini image generation.');
+    throw new Error('Missing GOOGLE_GENERATIVE_AI_API_KEY environment variable.');
   }
 
-  if (!geminiImageClient) {
-    geminiImageClient = new GoogleGenAI({ apiKey });
+  if (!genAIClient) {
+    // Pass the apiKey inside an options object
+    genAIClient = new GoogleGenAI({ apiKey });
   }
 
-  return geminiImageClient;
+  return genAIClient;
 }
 
-function sanitizeForFileName(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40) || 'image';
+// Zod schema for vocabulary word structure (used for validation)
+const VocabWordSchema = z.object({
+  WORDS: z.array(
+    z.object({
+      WORD: z.string(),
+      DEFINITION: z.string().describe('A clear, concise, student-friendly definition in one sentence'),
+      TEACHER_DEFINITION: z.string().describe('The original definition provided by the teacher in the input text'),
+      PRONUNCIATION: z.string().describe('Simple, syllable-based pronunciation guide (e.g., "EN-vuh-lope")'),
+      PART_OF_SPEECH: z.string().describe('noun | verb | adjective | adverb | etc.'),
+      EXAMPLES: z.array(
+        z.object({
+          sentence: z.string().describe('Kid-friendly example sentence'),
+          image_description: z.string().describe('Child-friendly illustration idea based on this sentence'),
+        })
+      ).length(5),
+    })
+  ),
+});
+
+// =============================================================================
+// 2. AI Generation Functions (Text/Object)
+// =============================================================================
+
+/**
+ * Process vocabulary words using Gemini with system instructions and JSON output mode.
+ * @param rawText Raw vocabulary text in any format.
+ * @returns Array of structured objects conforming to GeminiVocabResponse.
+ */
+export async function processVocabularyWords(rawText: string): Promise<GeminiVocabResponse[]> {
+  const client = getGenAIClient();
+
+  const systemInstruction = `You are an experienced middle school teacher creating vocabulary learning materials for students in grades 4-6 (ages 10-12). Your task is to parse a list of vocabulary words and return a structured JSON object.
+
+The JSON output must be an object with a single key "WORDS", which is an array.
+
+For each word you find, provide:
+- WORD: the vocabulary word.
+- DEFINITION: a clear, one-sentence definition for a 10-12 year old.
+- TEACHER_DEFINITION: the exact definition from the input text.
+- PRONUNCIATION: a simple, syllable-based guide (e.g., "en-VEL-ope").
+- PART_OF_SPEECH: noun, verb, adjective, etc.
+- EXAMPLES: exactly 5 distinct, engaging example sentences with corresponding image descriptions for a child-friendly illustration. The examples should be relatable to a 10-12 year old's life (school, hobbies, family, etc.).
+
+Parse ALL vocabulary words from the user's input text and return them in the "WORDS" array. The input may be formatted in various ways—extract and process all words you can identify.`;
+
+  // FIX 1: Use client.models.generateContent
+  const result = await client.models.generateContent({
+    model: GEMINI_TEXT_MODEL_ID,
+    contents: [
+        { role: 'user', parts: [{ text: `Here is the list of vocabulary words. Please process them according to my instructions:\n\n${rawText}` }] }
+    ],
+    config: {
+        systemInstruction: systemInstruction,
+        responseMimeType: 'application/json',
+    },
+  });
+
+  // FIX 2: Check if result.text is defined before parsing
+  const jsonText = result.text;
+
+  if (!jsonText) {
+      throw new Error("AI returned an empty or undefined JSON response text.");
+  }
+  
+  // TypeScript now knows jsonText is definitely a string
+  const parsedJson = JSON.parse(jsonText);
+  
+  // Validate the AI's output against our Zod schema
+  const validationResult = VocabWordSchema.safeParse(parsedJson);
+
+  if (!validationResult.success) {
+    console.error("Zod validation failed:", validationResult.error);
+    throw new Error("AI returned data in an unexpected format.");
+  }
+
+  return validationResult.data.WORDS;
 }
+
+// =============================================================================
+// 3. AI Generation Functions (Image)
+// =============================================================================
 
 export interface GenerateExampleImageParams {
   vocabSetId: string;
@@ -58,85 +129,9 @@ export interface GeneratedImageResult {
   mimeType: string;
 }
 
-
-// =============================================================================
-// 2. AI Generation Functions (Text/Object)
-// =============================================================================
-
 /**
- * Process vocabulary words in batch using Gemini AI.
- * This is the primary function for processing vocabulary words.
- * Accepts raw text in ANY format and lets the AI parse and process it.
- * @param rawText Raw vocabulary text in any format (numbered lists, comma-separated, with/without POS, etc.)
- * @returns Array of structured objects conforming to GeminiVocabResponse.
+ * Generates an example illustration for a vocabulary word using system instructions.
  */
-export async function processVocabularyWords(rawText: string): Promise<GeminiVocabResponse[]> {
-  const schema = z.object({
-    WORDS: z.array(
-      z.object({
-        WORD: z.string(),
-        DEFINITION: z.string().describe('A clear, concise, student-friendly definition in one sentence'),
-        TEACHER_DEFINITION: z.string().describe('The original definition provided by the teacher in the input text'),
-        PRONUNCIATION: z.string().describe('Simple, syllable-based pronunciation guide (e.g., "EN-vuh-lope")'),
-        PART_OF_SPEECH: z.string().describe('noun | verb | adjective | adverb | etc.'),
-        EXAMPLES: z.array(
-          z.object({
-            sentence: z.string().describe('Kid-friendly example sentence'),
-            image_description: z.string().describe('Child-friendly illustration idea based on this sentence'),
-          })
-        ).length(5),
-      })
-    ),
-  });
-
-  const result = await generateObject({
-    model: geminiFlash,
-    schema,
-    prompt: `You are an experienced middle school teacher creating vocabulary learning materials for students in grades 4-6 (ages 10-12).
-
-Here is a list of vocabulary words in various formats. Parse them and process each word:
-
-${rawText}
-
-For each word you find, provide:
-- WORD: the vocabulary word (extract it from the input text)
-- DEFINITION: a clear, precise definition in one sentence that a 10-12 year old can understand. Use grade-appropriate language but don't oversimplify.
-- TEACHER_DEFINITION: the exact definition provided by the teacher in the input text (extract it verbatim)
-- PRONUNCIATION: a simple, syllable-based pronunciation guide with capitalized stressed syllables (like "en-VEL-ope" or "FLAW-less-lee")
-- PART_OF_SPEECH: noun | verb | adjective | adverb | etc.
-- EXAMPLES: exactly 5 distinct, engaging example sentences that demonstrate different contexts and uses of the word
-
-Guidelines for examples:
-- Use realistic scenarios that 10-12 year olds experience: school projects, friendships, family activities, hobbies, sports, technology
-- Vary the contexts: show the word in different situations
-- Keep sentences natural and conversational, as if a peer is speaking
-- Each sentence should clearly demonstrate the word's meaning through context
-- Avoid overly simplistic or babyish scenarios
-
-Guidelines for image descriptions:
-- Create vivid, detailed visual scenes that upper elementary students will find engaging
-- Focus on relatable situations: classrooms, playgrounds, homes, sports fields, technology use
-- Include specific details about characters, actions, settings, and emotions
-- Avoid cartoon-style baby images; aim for illustrated scenes that feel more mature and realistic
-- Each image should directly illustrate its paired example sentence
-- Make scenes dynamic and interesting with clear storytelling elements
-
-Parse ALL vocabulary words from the input text and return them in the WORDS array. The input may be formatted in various ways (numbered lists, comma-separated, with or without part of speech indicators, etc.) - extract and process all words you can identify.`,
-  });
-
-  return result.object.WORDS;
-}
-
-// =============================================================================
-// 3. AI Generation Functions (Image)
-// =============================================================================
-
-/**
- * Generates and persists an example illustration for a vocabulary word.
- * Leverages the gemini-2.5-flash-image model, storing the resulting file under
- * `public/vocab-sets/{setId}/` so it can be served statically by Next.js.
- */
-
 export async function generateExampleImage({
   vocabSetId,
   exampleId,
@@ -145,123 +140,99 @@ export async function generateExampleImage({
   aspectRatio = '16:9',
 }: GenerateExampleImageParams): Promise<GeneratedImageResult> {
   if (!imageDescription?.trim()) {
-    throw new Error('Image description is required to generate an illustration.');
+    throw new Error('Image description is required.');
   }
 
-  const client = getGeminiImageClient();
+  const client = getGenAIClient();
 
-  const enhancedPrompt = enhanceImagePrompt(imageDescription.trim(), word);
+  // The system instruction defines the consistent art style.
+  const systemInstruction = `You are an expert illustrator creating engaging visuals for upper elementary students (ages 10-12).
 
-  const stream = await client.models.generateContentStream({
+Art style guidelines:
+- Use a modern, vibrant illustrated style.
+- Employ rich, saturated colors with good contrast.
+- Ensure clean, professional composition with clear focal points.
+- The style should resemble modern middle-grade book illustrations.
+
+Visual requirements:
+- Show clear emotions on characters' faces and use dynamic poses.
+- Include relatable, contemporary settings and environmental details.
+- Compose the scene to effectively fill the requested aspect ratio.`;
+  
+  // The user prompt provides the specific scene and word for this single generation.
+  const userPrompt = `Create Image: "${imageDescription.trim()}"'`;
+  
+  const result = await client.models.generateContent({
     model: GEMINI_IMAGE_MODEL_ID,
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: enhancedPrompt }],
-      },
-    ],
+    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
     config: {
-      responseModalities: ['IMAGE'],
-      imageConfig: {
-        aspectRatio,
-      },
+      systemInstruction,
+      responseModalities: [Modality.IMAGE],
+      imageConfig: { aspectRatio },
     },
   });
 
-  const imageParts: Array<{ buffer: Buffer; mimeType: string }> = [];
+  const candidateParts = result.candidates?.[0]?.content?.parts ?? [];
 
-  for await (const chunk of stream as AsyncIterable<unknown>) {
-    const candidates = (chunk as any)?.candidates ?? [];
+  const persistImage = async (buffer: Buffer, mimeType: string | undefined) => {
+    const resolvedMimeType = mimeType ?? 'image/png';
+    const extension = mime.getExtension(resolvedMimeType) ?? 'png';
 
-    for (const candidate of candidates) {
-      const parts = candidate?.content?.parts ?? [];
+    const setFolder = path.join(GEMINI_IMAGE_BASE_PATH, vocabSetId);
+    await mkdir(setFolder, { recursive: true });
 
-      for (const part of parts) {
-        const inlineData = part?.inlineData;
-        if (inlineData?.data) {
-          const mimeType = inlineData?.mimeType ?? 'image/png';
-          imageParts.push({
-            buffer: Buffer.from(inlineData.data, 'base64'),
-            mimeType,
-          });
-        }
+    const safeWord = sanitizeForFileName(word);
+    const fileName = `${safeWord}-${exampleId}-${randomUUID()}.${extension}`;
+    const absolutePath = path.join(setFolder, fileName);
+
+    await writeFile(absolutePath, buffer);
+
+    const publicUrl = `/vocab-sets/${vocabSetId}/${fileName}`;
+
+    return { publicUrl, absolutePath, fileName, mimeType: resolvedMimeType };
+  };
+
+  for (const part of candidateParts) {
+    const fileData = (part as { fileData?: { fileUri?: string; mimeType?: string } }).fileData;
+    if (fileData?.fileUri) {
+      const response = await fetch(fileData.fileUri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image from Gemini fileUri: ${response.statusText}`);
       }
+
+      const arrayBuffer = await response.arrayBuffer();
+      return persistImage(Buffer.from(arrayBuffer), fileData.mimeType);
+    }
+
+    const inlineData = (part as { inlineData?: { data?: string; mimeType?: string } }).inlineData;
+    if (inlineData?.data) {
+      const buffer = Buffer.from(inlineData.data, 'base64');
+      return persistImage(buffer, inlineData.mimeType);
     }
   }
 
-  if (imageParts.length === 0) {
-    throw new Error('Gemini did not return any inline image data.');
-  }
+  const responseTypes = candidateParts.map((part) =>
+    part ? Object.keys(part as Record<string, unknown>).join(', ') : 'unknown'
+  );
 
-  const { buffer, mimeType } = imageParts[0];
-  const extension = mime.getExtension(mimeType) ?? 'png';
-
-  const setFolder = path.join(GEMINI_IMAGE_BASE_PATH, vocabSetId);
-  await mkdir(setFolder, { recursive: true });
-
-  const safeWord = sanitizeForFileName(word);
-  const fileName = `${safeWord}-${exampleId}-${randomUUID()}.${extension}`;
-  const absolutePath = path.join(setFolder, fileName);
-
-  await writeFile(absolutePath, buffer);
-
-  const publicUrl = `/vocab-sets/${vocabSetId}/${fileName}`;
-
-  return {
-    publicUrl,
-    absolutePath,
-    fileName,
-    mimeType,
-  };
+  throw new Error(
+    `Gemini did not return any image data. Parts received: ${responseTypes.join(' | ')}`
+  );
 }
 
 
-
 // =============================================================================
-// 4. Utility Functions
+// 4. Utility Functions (Unchanged)
 // =============================================================================
 
-/**
- * Parse raw vocab text input - just pass it verbatim to AI for parsing.
- * The AI is smart enough to handle any format (numbered lists, comma-separated, with/without POS, etc.)
- * @param rawText The raw text input containing vocabulary words in any format.
- * @returns The raw text - no parsing needed, AI handles it all.
- */
+function sanitizeForFileName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'image';
+}
+
 export function parseVocabText(rawText: string): string {
-  // Simply return the raw text trimmed - let the AI figure out the format
   return rawText.trim();
-}
-
-/**
- * Generate image prompt enhancement by adding style and format constraints for generation.
- * Tailored for grades 4-6 students (ages 10-12).
- * @param basePrompt The core description from the AI model.
- * @param word The word itself, to be included in the image.
- * @returns The final, enhanced image generation prompt string.
- */
-export function enhanceImagePrompt(basePrompt: string, word: string): string {
-  return `Create a detailed, engaging illustration for upper elementary students (ages 10-12): ${basePrompt}
-
-Art style guidelines:
-- Use a modern, vibrant illustrated style (not overly cartoonish or babyish)
-- Rich, saturated colors with good contrast and depth
-- Clean, professional composition with clear focal points
-- Style should feel like modern middle-grade book illustrations or educational graphics
-- Include realistic details and textures while maintaining visual clarity
-
-Visual requirements:
-- Show clear emotions and expressions on characters' faces
-- Include environmental details that add context and interest
-- Use dynamic poses and compositions that tell a story
-- Ensure the scene is relatable to pre-teens: contemporary settings, realistic scenarios
-- Wide landscape format (16:9), compose the scene to fill the horizontal space effectively
-- Place key elements across the frame to take advantage of the widescreen format
-
-Text element:
-- Display the word "${word.toUpperCase()}" at the bottom center in large, bold, highly readable sans-serif font
-- Text should be clearly separated from the illustration (use a subtle banner or semi-transparent background bar)
-- Ensure excellent contrast between text and background for easy reading
-- Position text to work well with the 16:9 landscape format
-
-The overall feel should be sophisticated enough for 10-12 year olds while remaining educational and engaging.`;
 }
