@@ -259,10 +259,10 @@ export function StudyImageModal({
                         ? "border-green-400 bg-green-50 text-green-700 hover:border-green-500 hover:bg-green-100"
                         : "border-slate-300 bg-white text-slate-600 hover:border-slate-400 hover:bg-slate-50"
                     } ${example ? "" : "opacity-30 cursor-not-allowed"} ${
-                      isGenerating ? "animate-pulse border-indigo-400 bg-indigo-100" : ""
+                      isGenerating ? "border-indigo-400 bg-indigo-100" : ""
                     }`}
                   >
-                    <span className={`text-2xl font-bold ${isGenerating ? "animate-bounce" : ""}`}>{index + 1}</span>
+                    <span className="text-2xl font-bold">{index + 1}</span>
                     {isGenerating && (
                       <div className="absolute top-1 right-1">
                         <span className="flex h-2 w-2">
