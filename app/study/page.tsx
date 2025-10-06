@@ -1,8 +1,10 @@
 "use client";
 
+import HamburgerMenu from "../components/HamburgerMenu";
 import { StudyControls } from "./components/StudyControls";
 import { StudyFlashcard } from "./components/StudyFlashcard";
 import { StudyImageModal } from "./components/StudyImageModal";
+import { StudyWordList } from "./components/StudyWordList";
 import { useStudySession } from "./hooks/useStudySession";
 
 const MASTERY_SEGMENT_BG: Record<number, string> = {
@@ -50,18 +52,16 @@ export default function StudyPage() {
   } = useStudySession();
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-28 pt-3">
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 sm:px-6 lg:px-8">
-        {/* Slim Header */}
-        <header className="flex items-center justify-between gap-4 py-2">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900">Study Flashcards</h1>
-          </div>
-          <div className="flex items-center gap-3">
+    <div className="flex min-h-[100svh] flex-col bg-gradient-to-br from-indigo-50 via-slate-100 to-white">
+      {/* Compact Header */}
+      <header className="sticky top-0 z-40 flex-shrink-0 border-b border-slate-200/60 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 sm:justify-between">
+          <h1 className="w-full text-lg font-bold text-slate-900 sm:w-auto md:text-xl">Study Flashcards</h1>
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
             <select
               value={selectedSetId}
               onChange={(event) => handleSelectSet(event.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-indigo-400 focus:ring focus:ring-indigo-100"
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-indigo-400 focus:ring focus:ring-indigo-100 sm:min-w-[220px]"
             >
               {vocabSets.length === 0 ? (
                 <option value="">No vocabulary sets available</option>
@@ -74,86 +74,90 @@ export default function StudyPage() {
                 ))
               )}
             </select>
+            <HamburgerMenu className="sm:ml-2" />
           </div>
-        </header>
+        </div>
+      </header>
 
-        {errorMessage && (
-          <div className="rounded-2xl border border-rose-200/70 bg-rose-50/80 px-6 py-4 text-rose-600 shadow-sm">
+      {errorMessage && (
+        <div className="mx-auto w-full max-w-7xl flex-shrink-0 px-4 pt-4">
+          <div className="rounded-xl border border-rose-200/70 bg-rose-50/80 px-4 py-3 text-rose-600 shadow-sm">
             {errorMessage}
           </div>
-        )}
+        </div>
+      )}
 
-        <StudyFlashcard
-          words={words}
-          wordsState={wordsState}
-          selectedSetName={selectedSetName}
-          currentIndex={currentIndex}
-          currentWord={currentWord}
-          showDetails={showDetails}
-          onToggleDetails={toggleDetails}
-          onOpenImageModal={handleOpenImageModal}
-          currentMastery={currentMastery}
-          onPreviousWord={goToPreviousWord}
-          onNextWord={goToNextWord}
-          onSelectWord={goToWord}
-        />
-      </div>
+      {/* Main Layout - Optimized for iPad Vertical */}
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pb-32 pt-6">
+        <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-stretch">
+          <StudyFlashcard
+            words={words}
+            wordsState={wordsState}
+            selectedSetName={selectedSetName}
+            currentIndex={currentIndex}
+            currentWord={currentWord}
+            showDetails={showDetails}
+            onToggleDetails={toggleDetails}
+            onOpenImageModal={handleOpenImageModal}
+            currentMastery={currentMastery}
+          />
 
-      {currentWord && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-4 sm:px-6">
-          <div className="pointer-events-auto mx-auto w-full max-w-3xl space-y-3">
-            {/* Progress Overview - Compact at Bottom */}
-            {totalWords > 0 && (
-              <div className="rounded-2xl border border-slate-200/60 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-xl">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Progress</h3>
-                  <span className="text-xs font-semibold text-slate-600">
-                    {totalWords} {totalWords === 1 ? 'word' : 'words'}
+          <aside className="flex flex-col gap-6">
+            {currentWord && totalWords > 0 && (
+              <section className="rounded-3xl border border-white/40 bg-white/85 px-5 py-4 shadow-lg backdrop-blur">
+                <header className="mb-3 flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-slate-500">Progress</h3>
+                  <span className="text-xs font-semibold text-slate-400">
+                    {totalWords} {totalWords === 1 ? "word" : "words"}
                   </span>
-                </div>
-                <div className="flex h-2 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
+                </header>
+                <div className="flex h-3 overflow-hidden rounded-full border border-white/60 bg-slate-100">
                   {masterySegments
                     .filter((segment) => segment.percentage > 0)
-                    .map((segment, index, array) => {
-                      return (
-                        <div
-                          key={segment.level}
-                          className={`relative h-full transition-[width] duration-500 ease-out ${
-                            MASTERY_SEGMENT_BG[segment.level]
-                          } ${index !== array.length - 1 ? "border-r border-white" : ""}`}
-                          style={{ width: `${segment.percentage}%` }}
-                          aria-label={`${segment.label}: ${segment.count} words`}
-                          title={`${segment.label}: ${segment.count} words (${Math.round(segment.percentage)}%)`}
-                        />
-                      );
-                    })}
+                    .map((segment, index, array) => (
+                      <div
+                        key={segment.level}
+                        className={`${MASTERY_SEGMENT_BG[segment.level]} ${index !== array.length - 1 ? "border-r border-white/80" : ""} h-full transition-[width] duration-500 ease-out`}
+                        style={{ width: `${segment.percentage}%` }}
+                        aria-label={`${segment.label}: ${segment.count} words`}
+                        title={`${segment.label}: ${segment.count} words (${Math.round(segment.percentage)}%)`}
+                      />
+                    ))}
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {masterySegments.filter(s => s.count > 0).map((segment) => (
-                    <div key={segment.level} className="flex items-center gap-1.5 text-xs">
-                      <div className={`w-2.5 h-2.5 rounded-sm ${MASTERY_SEGMENT_BG[segment.level]}`} />
-                      <span className="text-slate-600">
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500 sm:grid-cols-3">
+                  {masterySegments.filter((segment) => segment.count > 0).map((segment) => (
+                    <div key={segment.level} className="flex items-center gap-2 rounded-xl bg-white/60 px-2 py-1">
+                      <span className={`inline-block h-2 w-2 rounded-full ${MASTERY_SEGMENT_BG[segment.level]}`} />
+                      <span className="font-medium text-slate-600">
                         {segment.label}: {segment.count}
                       </span>
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
-            
-            {/* Study Controls */}
-            <div className="rounded-[28px] border border-white/60 bg-white/90 p-6 shadow-2xl shadow-indigo-200/50 backdrop-blur-xl">
-              <StudyControls
-                onPrevious={goToPreviousWord}
-                onNext={goToNextWord}
-                onMarkIncorrect={() => handleProgress(false)}
-                onMarkCorrect={() => handleProgress(true)}
-                disabled={isUpdatingProgress}
-                className="sm:items-center"
-              />
-            </div>
-          </div>
+
+            <StudyWordList
+              words={words}
+              currentIndex={currentIndex}
+              onSelectWord={goToWord}
+            />
+          </aside>
         </div>
+      </main>
+
+      {currentWord && (
+        <footer className="sticky bottom-0 z-40 border-t border-slate-200/70 bg-white/95 backdrop-blur">
+          <div className="mx-auto flex w-full max-w-4xl px-4 py-5">
+            <StudyControls
+              onPrevious={goToPreviousWord}
+              onNext={goToNextWord}
+              onMarkIncorrect={() => handleProgress(false)}
+              onMarkCorrect={() => handleProgress(true)}
+              disabled={isUpdatingProgress}
+            />
+          </div>
+        </footer>
       )}
 
       <StudyImageModal

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import HamburgerMenu from "../components/HamburgerMenu";
 import type { GameMode } from "@/lib/types";
 import { useGamesSession } from "@/lib/hooks/useGamesSession";
 import { useGameProgress } from "@/lib/hooks/useGameProgress";
@@ -75,14 +76,17 @@ export default function ParentDashboardPage() {
     <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-4 md:pt-6">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-4">
-          <div className="text-center sm:text-left">
-            <p className="text-sm md:text-base uppercase tracking-wide text-indigo-600 font-semibold">Caregiver Overview</p>
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mt-1">Parent Dashboard</h1>
-            <p className="mt-3 text-base md:text-lg text-slate-600 max-w-2xl">
-              Track this week&apos;s vocabulary practice, celebrate milestones, and spot the modes that need a little extra encouragement.
-            </p>
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="text-center sm:text-left">
+              <p className="text-sm md:text-base uppercase tracking-wide text-indigo-600 font-semibold">Caregiver Overview</p>
+              <h1 className="mt-1 text-3xl font-bold text-slate-900 md:text-4xl">Parent Dashboard</h1>
+              <p className="mt-3 max-w-2xl text-base text-slate-600 md:text-lg">
+                Track this week&apos;s vocabulary practice, celebrate milestones, and spot the modes that need a little extra encouragement.
+              </p>
+            </div>
+            <HamburgerMenu className="sm:mt-1" />
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
+          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col items-start gap-2">
               <label className="text-sm font-semibold uppercase tracking-wide text-slate-500">View progress for</label>
               <select
