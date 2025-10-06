@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import HamburgerMenu from "../components/HamburgerMenu";
+import PageHeader from "../components/PageHeader";
 import type { GameMode } from "@/lib/types";
 import { useGamesSession } from "@/lib/hooks/useGamesSession";
 import { useGameProgress } from "@/lib/hooks/useGameProgress";
@@ -73,45 +73,28 @@ export default function ParentDashboardPage() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-4 md:pt-6">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-4">
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="text-center sm:text-left">
-              <p className="text-sm md:text-base uppercase tracking-wide text-indigo-600 font-semibold">Caregiver Overview</p>
-              <h1 className="mt-1 text-3xl font-bold text-slate-900 md:text-4xl">Parent Dashboard</h1>
-              <p className="mt-3 max-w-2xl text-base text-slate-600 md:text-lg">
-                Track this week&apos;s vocabulary practice, celebrate milestones, and spot the modes that need a little extra encouragement.
-              </p>
-            </div>
-            <HamburgerMenu className="sm:mt-1" />
-          </div>
-          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col items-start gap-2">
-              <label className="text-sm font-semibold uppercase tracking-wide text-slate-500">View progress for</label>
-              <select
-                value={selectedSetId}
-                onChange={(event) => handleSelectSet(event.target.value)}
-                className="w-full min-w-[240px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 shadow-sm outline-none transition focus:border-indigo-400 focus:ring focus:ring-indigo-100"
-              >
-                {vocabSets.map((set) => (
-                  <option key={set.id} value={set.id}>
-                    {set.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {selectedSetId && (
-              <button
-                onClick={handleResetProgress}
-                disabled={isResetting}
-                className="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold shadow-md transition hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isResetting ? 'Resetting...' : '🔄 Reset Progress'}
-              </button>
-            )}
-          </div>
-        </header>
+    <>
+      <PageHeader
+        title="Parent Dashboard"
+        subtitle="Caregiver Overview"
+        description="Track this week's vocabulary practice, celebrate milestones, and spot the modes that need a little extra encouragement."
+        vocabSets={vocabSets}
+        selectedSetId={selectedSetId}
+        onSelectSet={handleSelectSet}
+      >
+        {selectedSetId && (
+          <button
+            onClick={handleResetProgress}
+            disabled={isResetting}
+            className="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold shadow-md transition hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isResetting ? 'Resetting...' : '🔄 Reset Progress'}
+          </button>
+        )}
+      </PageHeader>
+
+      <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-6 md:pt-8">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
 
         <section className="rounded-2xl border border-slate-200 bg-white/90 shadow-lg p-5 md:p-6">
           <h2 className="text-lg md:text-xl font-bold text-slate-900 mb-1">Weekly Performance</h2>
@@ -210,7 +193,8 @@ export default function ParentDashboardPage() {
             <li>Use the Manage tab to print or review the twelve words for the week offline.</li>
           </ul>
         </section>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

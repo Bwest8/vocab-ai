@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import HamburgerMenu from '../components/HamburgerMenu';
+import PageHeader from '../components/PageHeader';
 import type { VocabSet, VocabWord, VocabExample } from '@/lib/types';
 
 interface VocabSetWithWords extends VocabSet {
@@ -269,18 +269,16 @@ export default function ManagePage() {
   }
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-4 md:pt-6">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="text-center sm:text-left">
-            <p className="text-sm md:text-base uppercase tracking-wide text-indigo-600 font-semibold">Parent Dashboard</p>
-            <h1 className="mt-1 text-3xl font-bold text-slate-900 md:text-4xl">Vocabulary Management</h1>
-            <p className="mt-3 max-w-2xl text-base text-slate-600 md:text-lg">
-              Manage your child's vocabulary sets and words. Keep track of definitions, pronunciations, and examples.
-            </p>
-          </div>
-          <HamburgerMenu className="self-center sm:self-start" />
-        </header>
+    <>
+      <PageHeader
+        title="Vocabulary Management"
+        subtitle="Parent Dashboard"
+        description="Manage your child's vocabulary sets and words. Keep track of definitions, pronunciations, and examples."
+        showVocabSetSelector={false}
+      />
+
+      <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-6 md:pt-8">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
 
         <div className="lg:flex lg:gap-6">
           {/* Sidebar */}
@@ -663,7 +661,8 @@ export default function ManagePage() {
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

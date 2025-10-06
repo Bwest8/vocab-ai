@@ -98,8 +98,8 @@ export function StudyFlashcard({
   }
 
   return (
-    <section className="relative flex h-full flex-col overflow-hidden rounded-[32px] border border-white/50 bg-gradient-to-br from-white/95 via-white/90 to-indigo-50/40 p-6 shadow-xl backdrop-blur md:p-10">
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-white/60 pb-6">
+    <section className="relative flex h-full flex-col overflow-hidden rounded-[32px] border border-white/50 bg-gradient-to-br from-white/95 via-white/90 to-indigo-50/40 p-5 shadow-xl backdrop-blur md:p-7">
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-white/60 pb-4">
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-indigo-500/80">
             {selectedSetName || "Vocabulary Adventure"}
@@ -114,8 +114,8 @@ export function StudyFlashcard({
         </span>
       </header>
 
-      <div className="flex flex-1 flex-col justify-center gap-10 py-8">
-        <div className="space-y-6 text-center md:text-left">
+      <div className="flex flex-1 flex-col justify-center gap-6 py-6">
+        <div className="space-y-4 text-center md:text-left">
           <div className="flex flex-col items-center gap-4 md:flex-row md:items-end">
             <h2 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
               {currentWord.word}
@@ -170,8 +170,8 @@ export function StudyFlashcard({
         </div>
 
         {showDetails && (
-          <div className="space-y-4">
-            <article className="rounded-3xl border border-indigo-100 bg-white/80 p-5 text-left shadow">
+          <div className="space-y-3">
+            <article className="rounded-3xl border border-indigo-100 bg-white/80 p-4 text-left shadow">
               <header className="mb-2 flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-indigo-500">Definition</h3>
                 <button
@@ -191,7 +191,7 @@ export function StudyFlashcard({
             </article>
 
             {currentWord.teacherDefinition && (
-              <article className="rounded-3xl border border-amber-200 bg-amber-50/80 p-5 text-left shadow">
+              <article className="rounded-3xl border border-amber-200 bg-amber-50/80 p-4 text-left shadow">
                 <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-amber-700">Teacher's Definition</h3>
                 <p className="mt-2 text-base font-medium leading-relaxed text-amber-900">
                   {currentWord.teacherDefinition}
@@ -200,12 +200,12 @@ export function StudyFlashcard({
             )}
 
             {currentExamples.length > 0 && (
-              <section className="rounded-3xl border border-white/60 bg-white/70 p-5 shadow">
-                <header className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <section className="rounded-3xl border border-white/60 bg-white/70 p-4 shadow">
+                <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-slate-600">Example Sentences</h3>
                   <p className="text-xs text-slate-400">Tap any sentence to open the gallery.</p>
                 </header>
-                <ul className="grid gap-3 md:grid-cols-2" role="list">
+                <ul className="grid gap-2.5 md:grid-cols-2" role="list">
                   {currentExamples.map((example, index) => (
                     <li key={example.id}>
                       <button

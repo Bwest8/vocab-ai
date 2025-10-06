@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import HamburgerMenu from "../components/HamburgerMenu";
+import PageHeader from "../components/PageHeader";
 import type { GameMode } from "@/lib/types";
 import { DefinitionMatchGame, FillInTheBlankGame, ReverseDefinitionGame, SpeedRoundGame } from "@/app/components/GameModes";
 import { GameModeSelector } from "@/app/components/GameModeSelector";
@@ -80,40 +80,19 @@ export default function GamesPage() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-4 md:pt-6">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-5">
-          <div className="text-center sm:text-left">
-            <p className="text-sm md:text-base uppercase tracking-wide text-indigo-600 font-semibold">Weekly word adventures</p>
-            <h1 className="mt-1 text-3xl font-bold text-slate-900 md:text-4xl">Games Lab</h1>
-            <p className="mt-3 max-w-2xl text-base text-slate-600 md:text-lg">
-              Choose your favorite game mode and master this week&apos;s vocabulary words! Keep your streak alive and collect stars along the way!
-            </p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col items-start gap-2 sm:max-w-sm">
-              <label htmlFor="games-vocab-set" className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Active vocab set
-              </label>
-              <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-                <select
-                  id="games-vocab-set"
-                  value={selectedSetId}
-                  onChange={(event) => handleSelectSet(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-700 shadow-sm outline-none transition focus:border-indigo-400 focus:ring focus:ring-indigo-100 sm:min-w-[240px]"
-                >
-                  {vocabSets.map((set) => (
-                    <option key={set.id} value={set.id}>
-                      {set.name}
-                    </option>
-                  ))}
-                </select>
-                <HamburgerMenu className="sm:ml-3" />
-              </div>
-              {isLoading && <span className="text-sm text-slate-400">Loading words…</span>}
-            </div>
-          </div>
-        </header>
+    <>
+      <PageHeader
+        title="Games Lab"
+        subtitle="Weekly word adventures"
+        description="Choose your favorite game mode and master this week's vocabulary words! Keep your streak alive and collect stars along the way!"
+        vocabSets={vocabSets}
+        selectedSetId={selectedSetId}
+        onSelectSet={handleSelectSet}
+        isLoading={isLoading}
+      />
+      
+      <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-6 md:pt-8">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
 
         {errorMessage && (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4 text-base text-rose-600">
@@ -175,7 +154,8 @@ export default function GamesPage() {
             </div>
           </div>
         </Modal>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

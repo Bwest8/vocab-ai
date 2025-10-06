@@ -1,6 +1,6 @@
 "use client";
 
-import HamburgerMenu from "../components/HamburgerMenu";
+import PageHeader from "../components/PageHeader";
 import { StudyControls } from "./components/StudyControls";
 import { StudyFlashcard } from "./components/StudyFlashcard";
 import { StudyImageModal } from "./components/StudyImageModal";
@@ -52,44 +52,28 @@ export default function StudyPage() {
   } = useStudySession();
 
   return (
-    <div className="flex min-h-[100svh] flex-col bg-gradient-to-br from-indigo-50 via-slate-100 to-white">
-      {/* Compact Header */}
-      <header className="sticky top-0 z-40 flex-shrink-0 border-b border-slate-200/60 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 sm:justify-between">
-          <h1 className="w-full text-lg font-bold text-slate-900 sm:w-auto md:text-xl">Study Flashcards</h1>
-          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-            <select
-              value={selectedSetId}
-              onChange={(event) => handleSelectSet(event.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-indigo-400 focus:ring focus:ring-indigo-100 sm:min-w-[220px]"
-            >
-              {vocabSets.length === 0 ? (
-                <option value="">No vocabulary sets available</option>
-              ) : (
-                vocabSets.map((set) => (
-                  <option key={set.id} value={set.id}>
-                    {set.name}
-                    {set.words ? ` (${set.words.length})` : ""}
-                  </option>
-                ))
-              )}
-            </select>
-            <HamburgerMenu className="sm:ml-2" />
-          </div>
-        </div>
-      </header>
+    <>
+      <PageHeader
+        title="Study Flashcards"
+        subtitle="Master your vocabulary"
+        description="Review your vocabulary words with interactive flashcards. Mark your progress as you learn!"
+        vocabSets={vocabSets}
+        selectedSetId={selectedSetId}
+        onSelectSet={handleSelectSet}
+      />
 
-      {errorMessage && (
-        <div className="mx-auto w-full max-w-7xl flex-shrink-0 px-4 pt-4">
-          <div className="rounded-xl border border-rose-200/70 bg-rose-50/80 px-4 py-3 text-rose-600 shadow-sm">
+      <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-6 md:pt-8">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
+
+        {errorMessage && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4 text-base text-rose-600">
             {errorMessage}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Main Layout - Optimized for iPad Vertical */}
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pb-32 pt-6">
-        <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-stretch">
+        {/* Main Layout - Optimized for iPad Vertical */}
+        <main className="flex flex-1 flex-col gap-6">
+          <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-stretch">
           <StudyFlashcard
             words={words}
             wordsState={wordsState}
@@ -103,6 +87,12 @@ export default function StudyPage() {
           />
 
           <aside className="flex flex-col gap-6">
+            <StudyWordList
+              words={words}
+              currentIndex={currentIndex}
+              onSelectWord={goToWord}
+            />
+
             {currentWord && totalWords > 0 && (
               <section className="rounded-3xl border border-white/40 bg-white/85 px-5 py-4 shadow-lg backdrop-blur">
                 <header className="mb-3 flex items-center justify-between">
@@ -136,19 +126,13 @@ export default function StudyPage() {
                 </div>
               </section>
             )}
-
-            <StudyWordList
-              words={words}
-              currentIndex={currentIndex}
-              onSelectWord={goToWord}
-            />
           </aside>
         </div>
       </main>
 
       {currentWord && (
         <footer className="sticky bottom-0 z-40 border-t border-slate-200/70 bg-white/95 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-4xl px-4 py-5">
+          <div className="mx-auto flex w-full max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
             <StudyControls
               onPrevious={goToPreviousWord}
               onNext={goToNextWord}
@@ -174,6 +158,8 @@ export default function StudyPage() {
         imageGenerationError={imageGenerationError}
         imageGenerationNotice={imageGenerationNotice}
       />
-    </div>
+        </div>
+      </div>
+    </>
   );
 }

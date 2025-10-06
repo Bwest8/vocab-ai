@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import HamburgerMenu from '../components/HamburgerMenu';
+import PageHeader from '../components/PageHeader';
 
 export default function CreateVocabPage() {
   const [vocabSetName, setVocabSetName] = useState('');
@@ -74,19 +74,16 @@ Armor, n`;
   };
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-4 md:pt-6">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="text-center sm:text-left">
-            <p className="text-sm md:text-base uppercase tracking-wide text-indigo-600 font-semibold">Build your collection</p>
-            <h1 className="mt-1 text-3xl font-bold text-slate-900 md:text-4xl">Create Vocabulary Set</h1>
-            <p className="mt-3 max-w-2xl text-base text-slate-600 md:text-lg">
-              Build a complete learning experience from your word list. AI will add definitions, pronunciations, and example sentences.
-            </p>
-          </div>
-          <HamburgerMenu className="self-center sm:self-start" />
-        </header>
+    <>
+      <PageHeader
+        title="Create Vocabulary Set"
+        subtitle="Build your collection"
+        description="Build a complete learning experience from your word list. AI will add definitions, pronunciations, and example sentences."
+        showVocabSetSelector={false}
+      />
+
+      <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-6 md:pt-8">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
 
         {/* Main Form Card */}
         <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-lg p-5 md:p-6">
@@ -256,7 +253,8 @@ Armor, n`;
             </li>
           </ol>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
