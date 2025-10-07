@@ -7,8 +7,8 @@ export async function PATCH(
 ) {
   try {
     const { wordId } = await params;
-    const body = await request.json();
-    const { word, definition, pronunciation, partOfSpeech } = body;
+  const body = await request.json();
+  const { word, definition, pronunciation, partOfSpeech, teacherDefinition } = body;
 
     if (!word || word.trim().length === 0) {
       return NextResponse.json(
@@ -29,11 +29,19 @@ export async function PATCH(
       data: {
         word: word.trim(),
         definition: definition.trim(),
+        teacherDefinition: teacherDefinition?.trim() || null,
         pronunciation: pronunciation?.trim() || null,
         partOfSpeech: partOfSpeech?.trim() || null,
       },
       include: {
         examples: true,
+        vocabSet: {
+          select: {
+            id: true,
+            name: true,
+            grade: true,
+          },
+        },
       },
     });
 

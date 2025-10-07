@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { GameMode } from "@/lib/games/types";
+import type { GameMode } from "@/lib/types";
 
 const DEFAULT_PROFILE_KEY = "default";
 const COMPLETION_THRESHOLD = 3;
@@ -157,6 +157,47 @@ export async function POST(request: Request) {
     console.error("Error recording game progress", error);
     return NextResponse.json(
       { error: "Failed to record game progress" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const vocabSetId = searchParams.get("vocabSetId");
+  const profileKey = searchParams.get("profileKey") || DEFAULT_PROFILE_KEY;
+
+  if (!vocabSetId || vocabSetId.trim().length === 0) {
+    return NextResponse.json({ error: "vocabSetId is required" }, { status: 400 });
+  }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const profile = await tx.gameProfile.findUnique({ where: { profileKey } });
+
+      if (!profile) {
+        return { message: "No progress found to reset" };
+      }
+
+      // Delete all mode progress for this vocab set
+      await tx.gameModeProgress.deleteMany({
+        where: {
+          profileId: profile.id,
+          vocabSetId,
+        },
+      });
+
+      // Optionally reset profile stats, but for now, just remove set-specific progress
+      // You could subtract points, etc., but keeping it simple
+
+      return { message: "Weekly practice reset successfully" };
+    });
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Error resetting game progress", error);
+    return NextResponse.json(
+      { error: "Failed to reset game progress" },
       { status: 500 }
     );
   }

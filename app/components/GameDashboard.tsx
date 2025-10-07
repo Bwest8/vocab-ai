@@ -1,7 +1,7 @@
 "use client";
 
-import type { GameMode } from "@/lib/games/types";
-import type { WeeklyMasterySummary } from "../hooks/useGamesSession";
+import type { GameMode } from "@/lib/types";
+import type { WeeklyMasterySummary } from "@/lib/hooks/useGamesSession";
 
 interface GameDashboardProps {
   selectedSetName: string;
