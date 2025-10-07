@@ -742,25 +742,44 @@ export default function ManagePage() {
                                           }`}
                                         />
                                       </button>
-                                      {examplesExpanded && (
-                                        <div className="mt-4 space-y-3">
-                                          {word.examples.map((example, index) => {
-                                            const hasImage = Boolean(example.imageUrl);
-                                            const hasDescription = Boolean(example.imageDescription);
+                                        {examplesExpanded && (
+                                          <div className="mt-4 space-y-3">
+                                            {word.examples.map((example, index) => {
+                                              const hasImage = Boolean(example.imageUrl);
+                                              const hasDescription = Boolean(example.imageDescription);
 
-                                            return (
-                                              <div
-                                                key={example.id}
-                                                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5"
-                                              >
-                                                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                                  <div className="space-y-2">
-                                                    <p className="text-sm text-slate-700">
-                                                      <span className="font-semibold text-slate-900">
-                                                        Example {index + 1}.
-                                                      </span>{' '}
-                                                      {example.sentence}
-                                                    </p>
+                                              return (
+                                                <div
+                                                  key={example.id}
+                                                  className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5"
+                                                >
+                                                  <div className="space-y-3">
+                                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                                      <p className="text-sm text-slate-700">
+                                                        <span className="font-semibold text-slate-900">
+                                                          Example {index + 1}.
+                                                        </span>{' '}
+                                                        {example.sentence}
+                                                      </p>
+                                                      {hasImage && (
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => handleDeleteExampleImage(word.id, example.id)}
+                                                          disabled={Boolean(clearingExampleImageId)}
+                                                          title="Delete this example's image"
+                                                          className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        >
+                                                          {clearingExampleImageId === example.id ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                          ) : (
+                                                            <>
+                                                              <Trash2 className="h-3.5 w-3.5" />
+                                                              <span>Remove image</span>
+                                                            </>
+                                                          )}
+                                                        </button>
+                                                      )}
+                                                    </div>
                                                     <div className="flex flex-wrap items-center gap-2">
                                                       <span
                                                         className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
@@ -781,32 +800,15 @@ export default function ManagePage() {
                                                       <p className="text-xs text-slate-500">{example.imageDescription}</p>
                                                     )}
                                                   </div>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteExampleImage(word.id, example.id)}
-                                                    disabled={Boolean(clearingExampleImageId)}
-                                                    title="Delete this example's image"
-                                                    className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                                  >
-                                                    {clearingExampleImageId === example.id ? (
-                                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                      <>
-                                                        <ImageOff className="h-4 w-4" />
-                                                        <span>Delete image</span>
-                                                      </>
-                                                    )}
-                                                  </button>
                                                 </div>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
                             );
                           })}
                         </div>
@@ -911,7 +913,7 @@ export default function ManagePage() {
                     className="rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-sm shadow-indigo-100/30 transition-all duration-200 hover:border-indigo-200 hover:shadow-lg"
                   >
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-2 md:max-w-[70%]">
                         <div className="flex flex-wrap items-center gap-2">
                           <h4 className="text-lg font-semibold text-slate-900 md:text-xl">{word.word}</h4>
                           {word.partOfSpeech && (
@@ -935,12 +937,12 @@ export default function ManagePage() {
                           </p>
                         )}
                       </div>
-                      <div className="flex flex-col items-start gap-2 md:items-end">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                      <div className="flex flex-row flex-wrap items-center gap-2 md:max-w-[30%] md:justify-end">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 whitespace-nowrap">
                           {word.vocabSet.name}
                         </span>
                         {word.vocabSet.grade && (
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 whitespace-nowrap">
                             Grade {word.vocabSet.grade}
                           </span>
                         )}
