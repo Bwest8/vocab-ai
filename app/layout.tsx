@@ -14,6 +14,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Vocab AI",
   description: "AI-powered vocabulary learning with flashcards, games, and progress tracking.",
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-icon.png',
+    other: [
+      { rel: 'icon', type: 'image/svg+xml', url: '/icon0.svg' },
+      { rel: 'icon', type: 'image/png', url: '/icon1.png' },
+    ]
+  },
 };
 
 export const viewport: Viewport = {
@@ -33,6 +41,7 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#4f46e5" />
+        <meta name="apple-mobile-web-app-title" content="Vocab AI" />
       </head>
         <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-slate-50`}>
         {children}
