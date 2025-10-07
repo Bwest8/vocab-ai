@@ -131,8 +131,8 @@ export default function StudyPage() {
       </main>
 
       {currentWord && (
-        <footer className="sticky bottom-0 z-40 border-t border-slate-200/70 bg-white/95 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
+        <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/70 bg-white/95 backdrop-blur lg:sticky">
+          <div className="mx-auto flex w-full max-w-6xl px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:pb-4">
             <StudyControls
               onPrevious={goToPreviousWord}
               onNext={goToNextWord}

@@ -1,6 +1,7 @@
 'use client';
 import { MASTERY_COLORS, MASTERY_LABELS, type MasteryLevel } from "@/lib/types";
 import type { FetchState, WordWithRelations } from "@/lib/study/types";
+import { Eye, EyeOff, Images } from "lucide-react";
 import { useState } from 'react';
 
 
@@ -156,7 +157,14 @@ export function StudyFlashcard({
             type="button"
             className="flex-1 rounded-2xl bg-indigo-600 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
-            {showDetails ? "Hide Answer" : "Show Answer"}
+            <span className="flex items-center justify-center gap-2">
+              {showDetails ? (
+                <EyeOff className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <Eye className="h-5 w-5" aria-hidden="true" />
+              )}
+              {showDetails ? "Hide Answer" : "Show Answer"}
+            </span>
           </button>
           {currentExamples.length > 0 && (
             <button
@@ -164,7 +172,10 @@ export function StudyFlashcard({
               type="button"
               className="flex-1 rounded-2xl bg-slate-900 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-slate-900/30 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
             >
-              Visual Examples
+              <span className="flex items-center justify-center gap-2">
+                <Images className="h-5 w-5" aria-hidden="true" />
+                Visual Examples
+              </span>
             </button>
           )}
         </div>
