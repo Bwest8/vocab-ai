@@ -83,13 +83,21 @@ export default function ParentDashboardPage() {
         onSelectSet={handleSelectSet}
       >
         {selectedSetId && (
-          <button
-            onClick={handleResetProgress}
-            disabled={isResetting}
-            className="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold shadow-md transition hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isResetting ? 'Resetting...' : '🔄 Reset Progress'}
-          </button>
+          <>
+            <button
+              onClick={() => window.open(`/parent/print-matching/${selectedSetId}`, '_blank')}
+              className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold shadow-md transition hover:bg-blue-700"
+            >
+              🖨️ Print Matching Activity
+            </button>
+            <button
+              onClick={handleResetProgress}
+              disabled={isResetting}
+              className="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold shadow-md transition hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isResetting ? 'Resetting...' : '🔄 Reset Progress'}
+            </button>
+          </>
         )}
       </PageHeader>
 

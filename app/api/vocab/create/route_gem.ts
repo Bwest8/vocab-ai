@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { processVocabularyWords } from '@/lib/xaiVocabProcessor';
+import { processVocabularyWords, parseVocabText } from '@/lib/gemini';
 import { prisma } from '@/lib/prisma';
 import type { ProcessVocabRequest } from '@/lib/types';
 
@@ -11,6 +11,16 @@ export async function POST(request: Request) {
     if (!rawText || typeof rawText !== 'string' || rawText.trim().length === 0) {
       return NextResponse.json(
         { error: 'Please provide vocabulary text to process' },
+        { status: 400 }
+      );
+    }
+
+    // Simply pass the raw text to the AI - it will parse and process everything
+    const cleanedText = parseVocabText(rawText);
+    
+    if (!cleanedText) {
+      return NextResponse.json(
+        { error: 'No vocabulary text provided' },
         { status: 400 }
       );
     }
@@ -30,7 +40,7 @@ export async function POST(request: Request) {
 
     // Process ALL words with AI in a single batch request - AI parses and processes everything
     console.log('Sending raw text to AI for parsing and processing...');
-    const aiResults = await processVocabularyWords(rawText);
+    const aiResults = await processVocabularyWords(cleanedText);
     console.log(`✓ AI processing complete for ${aiResults.length} words`);
 
     // Save all words and examples to database in a transaction

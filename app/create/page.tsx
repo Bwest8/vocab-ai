@@ -12,18 +12,28 @@ export default function CreateVocabPage() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const exampleText = `Aspiring, adj
-Rival, adj
-Siege, n
-Transform, v
-Loyal, adj
-Seize, v
-Esteemed, adj
-Privileged, adj
-Enclose, v
-Infamous, adj
-Influential, adj
-Armor, n`;
+  const exampleText = `Humble
+Adj Not thinking you are better than other; modest; not extravagant
+Curfew
+n. an order or law requiring people to be in their homes at a certain time, usually at night (33)
+Fuel
+v. to give strength to or cause something to happen (fueled) (30)
+Summon
+V To call or send for someone
+Devote
+V To give time or attention to something
+Advise
+V To give a suggestion about how something should be done
+Destined
+Adj Certain to become something or do something
+Apprentice
+N A person who learns a skill or trade by working with a skilled craftsman for a period of time, usually for no pay
+Thrive
+V To grow and succeed
+Anchored
+Adj Strongly connected
+Merchant
+n. someone who buys and sells things; the owner of a store (merchants) (30)`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
