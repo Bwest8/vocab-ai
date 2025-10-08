@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import path from 'node:path';
+import { unlink } from 'node:fs/promises';
+
+// Use custom storage dir from environment variable
+const VOCAB_IMAGES_DIR = path.resolve(process.env.VOCAB_IMAGES_DIR!);
 
 export async function GET(
   request: Request,
@@ -86,12 +91,52 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Delete the vocab set (cascade will handle words and examples)
+    // First, fetch all examples with images that will be deleted
+    const examples = await prisma.vocabExample.findMany({
+      where: {
+        word: {
+          vocabSetId: id,
+        },
+        imageUrl: {
+          not: null,
+        },
+      },
+      select: {
+        imageUrl: true,
+      },
+    });
+
+    // Delete image files from disk
+    await Promise.all(
+      examples.map(async (example) => {
+        if (!example.imageUrl) return;
+
+        // Extract filename from URL (handles both /vocab-sets/... and /api/images/vocab-sets/...)
+        const urlPath = example.imageUrl
+          .replace(/^\/api\/images\/vocab-sets\//, '')
+          .replace(/^\/vocab-sets\//, '');
+        const absolutePath = path.join(VOCAB_IMAGES_DIR, urlPath);
+
+        try {
+          await unlink(absolutePath);
+        } catch (fileError) {
+          // Log but don't fail if file doesn't exist
+          if ((fileError as NodeJS.ErrnoException).code !== 'ENOENT') {
+            console.warn(`Failed to delete image file: ${absolutePath}`, fileError);
+          }
+        }
+      })
+    );
+
+    // Delete the vocab set (cascade will handle words and examples in DB)
     await prisma.vocabSet.delete({
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true, 
+      deletedImages: examples.length 
+    });
   } catch (error) {
     console.error('Error deleting vocabulary set:', error);
     return NextResponse.json(

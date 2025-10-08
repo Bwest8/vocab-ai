@@ -44,13 +44,10 @@ export function StudyFlashcard({
         throw new Error('Failed to get audio');
       }
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audioElement = new Audio(audioUrl);
+      // API returns URL reference for custom storage
+      const data = await response.json();
+      const audioElement = new Audio(data.url);
       await audioElement.play();
-
-      // Clean up the URL after playing
-      audioElement.onended = () => URL.revokeObjectURL(audioUrl);
 
     } catch (error) {
       console.error('TTS Error:', error);

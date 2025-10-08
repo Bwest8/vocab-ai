@@ -75,14 +75,18 @@ Located in `app/components/GameModes.tsx`:
 - `speed-round` (8 pts) - Rapid fire questions
 
 ### Image Generation
-- Files stored in `public/vocab-sets/{setId}/{exampleId}.{ext}`
+- Files stored in `public/vocab-sets/{setId}/{exampleId}.{ext}` (or `$VOCAB_IMAGES_DIR` if set)
+- **Production Mode**: Uses API route `/api/images/vocab-sets/...` to serve from custom storage
+- **Development Mode**: Direct public path `/vocab-sets/...` works via symlinks
 - Returns `{ publicUrl, fullPath, mimeType, sizeKB }`
 - Uses Gemini 2.5 Flash Image model
 - Auto-cleanup: DELETE routes remove filesystem files
 
 ### TTS Caching
 - MD5 hash of `text:voiceId` determines cache filename
-- Stored in `public/audio/tts/{hash}.mp3`
+- Stored in `public/audio/tts/{hash}.mp3` (or `$TTS_CACHE_DIR` if set)
+- **Production Mode**: Returns `{ url: "/api/audio/tts/{hash}.mp3" }` for custom storage
+- **Development Mode**: Returns audio blob directly or via symlink
 - Cache-Control: 1 year for cached files
 
 ## Common Patterns
@@ -124,13 +128,14 @@ lib/
 
 ## Gotchas
 
-1. **Image URLs**: Store relative paths in DB (`/vocab-sets/...`), but filesystem uses absolute paths
+1. **Image URLs**: In production with custom storage, use API routes (`/api/images/vocab-sets/...`); in dev, direct paths work
 2. **Game Profiles**: Always use `profileKey`, never `userId` for lookups
 3. **Migrations**: Schema changes must use `npx prisma migrate dev --name description`
 4. **Public Directory**: Ignore `/public/vocab-sets/*` and `/public/audio/*` in git
 5. **AI Responses**: Use `jsonrepair` library to fix malformed JSON from AI models
 6. **Turbopack**: Some configs don't apply in dev mode (e.g., PWA settings)
 7. **Custom Storage**: Set `TTS_CACHE_DIR` and `VOCAB_IMAGES_DIR` env vars to store files outside `public/` (useful for macOS external drives)
+8. **Production Symlinks**: Next.js doesn't follow symlinks in production builds - use API routes instead
 
 ## Testing/Debugging
 - Check Prisma Studio for data inspection

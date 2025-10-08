@@ -3,6 +3,9 @@ import path from 'node:path';
 import { unlink } from 'node:fs/promises';
 import { prisma } from '@/lib/prisma';
 
+// Use custom storage dir from environment variable
+const VOCAB_IMAGES_DIR = path.resolve(process.env.VOCAB_IMAGES_DIR!);
+
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string; exampleId: string }> }
@@ -42,8 +45,9 @@ export async function DELETE(
       return NextResponse.json({ success: true, alreadyEmpty: true });
     }
 
-    const normalizedPath = imageUrl.replace(/^\/+/, '');
-    const absolutePath = path.join(process.cwd(), 'public', normalizedPath);
+    // Extract filename from URL (handles both /vocab-sets/... and /api/images/vocab-sets/...)
+    const urlPath = imageUrl.replace(/^\/api\/images\/vocab-sets\//, '').replace(/^\/vocab-sets\//, '');
+    const absolutePath = path.join(VOCAB_IMAGES_DIR, urlPath);
 
     try {
       await unlink(absolutePath);

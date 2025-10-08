@@ -4,10 +4,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
-// Use environment variable for cache directory, fallback to public/audio/tts
-const CACHE_DIR = process.env.TTS_CACHE_DIR 
-  ? path.resolve(process.env.TTS_CACHE_DIR)
-  : path.join(process.cwd(), 'public', 'audio', 'tts');
+// Use environment variable for cache directory
+const CACHE_DIR = path.resolve(process.env.TTS_CACHE_DIR!);
 
 // Ensure cache directory exists
 async function ensureCacheDir() {
@@ -45,14 +43,10 @@ export async function GET(request: NextRequest) {
     // Check if file exists in cache
     try {
       await fs.access(filePath);
-      // File exists, return it
-      const fileBuffer = await fs.readFile(filePath);
-      return new NextResponse(fileBuffer as any, {
-        headers: {
-          'Content-Type': 'audio/mpeg',
-          'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
-        },
-      });
+      
+      // Return URL reference to API route
+      const audioUrl = `/api/audio/tts/${filename}`;
+      return NextResponse.json({ url: audioUrl });
     } catch {
       // File doesn't exist, generate it
     }
@@ -84,13 +78,9 @@ export async function GET(request: NextRequest) {
     // Save to cache
     await fs.writeFile(filePath, buffer);
 
-    // Return the audio
-    return new NextResponse(buffer as any, {
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'Cache-Control': 'public, max-age=31536000',
-      },
-    });
+    // Return URL reference to API route
+    const audioUrl = `/api/audio/tts/${filename}`;
+    return NextResponse.json({ url: audioUrl });
 
   } catch (error) {
     console.error('TTS API Error:', error);

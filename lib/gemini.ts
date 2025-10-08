@@ -13,10 +13,8 @@ import type { GeminiVocabResponse } from './types';
 
 const GEMINI_TEXT_MODEL_ID = 'models/gemini-2.5-flash';
 const GEMINI_IMAGE_MODEL_ID = 'models/gemini-2.5-flash-image';
-// Use environment variable for image storage, fallback to public/vocab-sets
-const GEMINI_IMAGE_BASE_PATH = process.env.VOCAB_IMAGES_DIR
-  ? path.resolve(process.env.VOCAB_IMAGES_DIR)
-  : path.join(process.cwd(), 'public', 'vocab-sets');
+// Use environment variable for image storage
+const GEMINI_IMAGE_BASE_PATH = path.resolve(process.env.VOCAB_IMAGES_DIR!);
 
 // Single client for the entire module
 let genAIClient: GoogleGenAI | null = null;
@@ -200,7 +198,8 @@ export async function generateExampleImage({
 
     await writeFile(absolutePath, buffer);
 
-    const publicUrl = `/vocab-sets/${vocabSetId}/${fileName}`;
+    // Always use API route for custom storage
+    const publicUrl = `/api/images/vocab-sets/${vocabSetId}/${fileName}`;
 
     return { publicUrl, absolutePath, fileName, mimeType: resolvedMimeType };
   };
