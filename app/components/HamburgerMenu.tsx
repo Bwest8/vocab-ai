@@ -97,10 +97,10 @@ export default function HamburgerMenu({ className = "", buttonClassName = "" }: 
               <motion.aside
                 id="primary-navigation"
                 aria-label="Primary navigation"
-                className="fixed inset-y-0 right-0 z-[9999] w-[min(90vw,360px)] bg-gradient-to-br from-indigo-700 via-indigo-800 to-purple-800 text-white shadow-2xl"
-                initial={{ x: "100%" }}
+                className="fixed inset-y-0 left-0 z-[9999] w-[min(90vw,360px)] bg-gradient-to-br from-indigo-700 via-indigo-800 to-purple-800 text-white shadow-2xl"
+                initial={{ x: "-100%" }}
                 animate={{ x: 0 }}
-                exit={{ x: "100%" }}
+                exit={{ x: "-100%" }}
                 transition={{ type: "spring", stiffness: 260, damping: 30 }}
               >
                 <div className="flex h-full flex-col">

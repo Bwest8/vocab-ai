@@ -4,7 +4,10 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
-const CACHE_DIR = path.join(process.cwd(), 'public', 'audio', 'tts');
+// Use environment variable for cache directory, fallback to public/audio/tts
+const CACHE_DIR = process.env.TTS_CACHE_DIR 
+  ? path.resolve(process.env.TTS_CACHE_DIR)
+  : path.join(process.cwd(), 'public', 'audio', 'tts');
 
 // Ensure cache directory exists
 async function ensureCacheDir() {

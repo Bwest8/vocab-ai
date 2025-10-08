@@ -13,7 +13,10 @@ import type { GeminiVocabResponse } from './types';
 
 const GEMINI_TEXT_MODEL_ID = 'models/gemini-2.5-flash';
 const GEMINI_IMAGE_MODEL_ID = 'models/gemini-2.5-flash-image';
-const GEMINI_IMAGE_BASE_PATH = path.join(process.cwd(), 'public', 'vocab-sets');
+// Use environment variable for image storage, fallback to public/vocab-sets
+const GEMINI_IMAGE_BASE_PATH = process.env.VOCAB_IMAGES_DIR
+  ? path.resolve(process.env.VOCAB_IMAGES_DIR)
+  : path.join(process.cwd(), 'public', 'vocab-sets');
 
 // Single client for the entire module
 let genAIClient: GoogleGenAI | null = null;
