@@ -42,10 +42,11 @@ next-env.d.ts
 
 /app/generated/prisma
 
-# Media storage (original files and backups from migration)
-/public/vocab-sets/*
+# Media storage (inside project - not committed)
+/storage/
+
+# Public directory backups from migration
 /public/vocab-sets.backup/
-/public/audio/*
 /public/audio/tts.backup/
 
 # Storage migration backups
