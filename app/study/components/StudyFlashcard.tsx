@@ -2,8 +2,14 @@
 import { MASTERY_COLORS, MASTERY_LABELS, type MasteryLevel } from "@/lib/types";
 import type { FetchState, WordWithRelations } from "@/lib/study/types";
 import { Eye, EyeOff, Images } from "lucide-react";
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
+type AudioKey = 'word' | 'definition';
+type AudioListeners = {
+  ended: () => void;
+  pause: () => void;
+  error: () => void;
+};
 
 interface StudyFlashcardProps {
   words: WordWithRelations[];
@@ -29,12 +35,125 @@ export function StudyFlashcard({
   currentMastery,
 }: StudyFlashcardProps) {
   const currentExamples = currentWord?.examples ?? [];
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [audioLoading, setAudioLoading] = useState<Record<AudioKey, boolean>>({
+    word: false,
+    definition: false,
+  });
 
-  const speak = async (text: string) => {
-    if (isSpeaking) return;
+  const wordAudioRef = useRef<HTMLAudioElement | null>(null);
+  const definitionAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRefs: Record<AudioKey, typeof wordAudioRef> = {
+    word: wordAudioRef,
+    definition: definitionAudioRef,
+  };
 
-    setIsSpeaking(true);
+  const speakInProgressRef = useRef<Record<AudioKey, boolean>>({
+    word: false,
+    definition: false,
+  });
+
+  const audioListenersRef = useRef<Record<AudioKey, AudioListeners | undefined>>({
+    word: undefined,
+    definition: undefined,
+  });
+
+  const setLoading = (key: AudioKey, value: boolean) => {
+    setAudioLoading((prev) => {
+      if (prev[key] === value) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [key]: value,
+      };
+    });
+  };
+
+  const stopAudio = (key: AudioKey) => {
+    const audioElement = audioRefs[key].current;
+    if (!audioElement) {
+      return;
+    }
+    audioElement.pause();
+    audioElement.currentTime = 0;
+    speakInProgressRef.current[key] = false;
+    setLoading(key, false);
+  };
+
+  const ensureAudioElement = (key: AudioKey) => {
+    const audioElement = audioRefs[key].current;
+    if (!audioElement) {
+      return null;
+    }
+
+    if (!audioListenersRef.current[key]) {
+      const handleEnded = () => {
+        speakInProgressRef.current[key] = false;
+        setLoading(key, false);
+      };
+
+      const handlePause = () => {
+        const current = audioRefs[key].current;
+        if (!current) {
+          return;
+        }
+        if (!speakInProgressRef.current[key] && (current.ended || current.currentTime === 0)) {
+          setLoading(key, false);
+        }
+      };
+
+      const handleError = () => {
+        speakInProgressRef.current[key] = false;
+        setLoading(key, false);
+      };
+
+      audioElement.crossOrigin = 'anonymous';
+      audioElement.addEventListener('ended', handleEnded);
+      audioElement.addEventListener('pause', handlePause);
+      audioElement.addEventListener('error', handleError);
+
+      audioListenersRef.current[key] = {
+        ended: handleEnded,
+        pause: handlePause,
+        error: handleError,
+      };
+    }
+
+    return audioElement;
+  };
+
+  useEffect(() => {
+    return () => {
+      (['word', 'definition'] as const).forEach((key) => {
+        const audioElement = audioRefs[key].current;
+        const listeners = audioListenersRef.current[key];
+        if (audioElement && listeners) {
+          audioElement.removeEventListener('ended', listeners.ended);
+          audioElement.removeEventListener('pause', listeners.pause);
+          audioElement.removeEventListener('error', listeners.error);
+          audioElement.pause();
+          audioElement.currentTime = 0;
+        }
+        audioListenersRef.current[key] = undefined;
+      });
+    };
+  }, []);
+
+  const speak = async (key: AudioKey, text: string) => {
+    if (speakInProgressRef.current[key]) {
+      stopAudio(key);
+    }
+
+    if (!text?.trim()) return;
+
+    const audioElement = ensureAudioElement(key);
+    if (!audioElement) return;
+
+    const otherKey: AudioKey = key === 'word' ? 'definition' : 'word';
+    stopAudio(otherKey);
+
+    speakInProgressRef.current[key] = true;
+    setLoading(key, true);
     try {
       // Use our cached TTS API endpoint
       const voiceId = '67oeJmj7jIMsdE6yXPr5'; // Current voice ID
@@ -45,19 +164,34 @@ export function StudyFlashcard({
       }
 
       // API returns URL reference for custom storage
-      const data = await response.json();
-      const audioElement = new Audio(data.url);
+      const data = (await response.json()) as { url?: string };
+      if (!data.url) {
+        throw new Error('Invalid audio response');
+      }
+
+      const audioUrl = data.url.startsWith('http')
+        ? data.url
+        : typeof window !== 'undefined'
+          ? new URL(data.url, window.location.origin).toString()
+          : data.url;
+
+      audioElement.pause();
+      audioElement.currentTime = 0;
+      audioElement.src = audioUrl;
+      audioElement.load();
       await audioElement.play();
 
     } catch (error) {
       console.error('TTS Error:', error);
       // Fallback to Web Speech API if our API fails
-      if ('speechSynthesis' in window) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
-        speechSynthesis.speak(utterance);
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
       }
     } finally {
-      setIsSpeaking(false);
+      speakInProgressRef.current[key] = false;
+      setLoading(key, false);
     }
   };
 
@@ -97,6 +231,8 @@ export function StudyFlashcard({
 
   return (
     <section className="relative flex h-full flex-col overflow-hidden rounded-[32px] border border-white/50 bg-gradient-to-br from-white/95 via-white/90 to-indigo-50/40 p-5 shadow-xl backdrop-blur md:p-7">
+      <audio ref={wordAudioRef} className="hidden" preload="auto" playsInline />
+      <audio ref={definitionAudioRef} className="hidden" preload="auto" playsInline />
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-white/60 pb-4">
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-indigo-500/80">
@@ -119,8 +255,8 @@ export function StudyFlashcard({
               {currentWord.word}
             </h2>
             <button
-              onClick={() => speak(currentWord.word)}
-              disabled={isSpeaking}
+              onClick={() => speak('word', currentWord.word)}
+              disabled={!currentWord.word || audioLoading.word}
               className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 shadow-inner shadow-indigo-500/20 transition hover:bg-indigo-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
               aria-label="Play pronunciation"
             >
@@ -183,8 +319,8 @@ export function StudyFlashcard({
               <header className="mb-2 flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-[0.3em] text-indigo-500">Definition</h3>
                 <button
-                  onClick={() => speak(currentWord.definition)}
-                  disabled={isSpeaking}
+                  onClick={() => speak('definition', currentWord.definition)}
+                  disabled={!currentWord.definition || audioLoading.definition}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 transition hover:bg-indigo-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50"
                   aria-label="Play definition"
                 >
