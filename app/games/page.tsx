@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import PageHeader from "../components/PageHeader";
 import type { GameMode } from "@/lib/types";
-import { DefinitionMatchGame, FillInTheBlankGame, ReverseDefinitionGame, SpeedRoundGame } from "@/app/components/GameModes";
 import { GameModeSelector } from "@/app/components/GameModeSelector";
 import { useGamesSession } from "@/lib/hooks/useGamesSession";
 import { useGameProgress } from "@/lib/hooks/useGameProgress";
-import Modal from 'react-modal';
 
 const schedule: Array<{ day: string; focus: string; mode: GameMode; description: string }> = [
   { day: "Day 1", focus: "Definition Match", mode: "definition-match", description: "Preview new words and match meanings." },
@@ -15,17 +14,14 @@ const schedule: Array<{ day: string; focus: string; mode: GameMode; description:
   { day: "Day 3", focus: "Reverse Mode", mode: "reverse-definition", description: "See the words first and recall definitions." },
   { day: "Day 4", focus: "Fill-in-the-Blank", mode: "fill-in-the-blank", description: "Use context clues in real sentences." },
   { day: "Day 5", focus: "Speed Round", mode: "speed-round", description: "Timed challenge for rapid recall." },
+  { day: "Day 6", focus: "Matching Game", mode: "matching", description: "Match words with their definitions." },
 ];
 
 export default function GamesPage() {
+  const router = useRouter();
   const {
     vocabSets,
     selectedSetId,
-    selectedSetName,
-    weeklyWords,
-    reviewWords,
-    words,
-    weeklyMastery,
     errorMessage,
     setState,
     wordsState,
@@ -34,49 +30,12 @@ export default function GamesPage() {
 
   const progress = useGameProgress(selectedSetId || null);
   const [selectedMode, setSelectedMode] = useState<GameMode | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [gameKey, setGameKey] = useState(0);
-
-  useEffect(() => {
-    Modal.setAppElement(document.body);
-  }, []);
 
   const isLoading = setState === "loading" || wordsState === "loading";
 
-  const masteryReady = progress.completedModes.size >= 4;
-
-  const modeComponent = useMemo(() => {
-    if (!selectedMode) return null;
-    const commonProps = {
-      weeklyWords,
-      reviewWords,
-      allWords: words,
-      onResult: progress.registerResult,
-      gameKey,
-    } as const;
-
-    switch (selectedMode) {
-      case "definition-match":
-        return <DefinitionMatchGame {...commonProps} />;
-      case "reverse-definition":
-        return <ReverseDefinitionGame {...commonProps} />;
-      case "fill-in-the-blank":
-        return <FillInTheBlankGame {...commonProps} />;
-      case "speed-round":
-      default:
-        return <SpeedRoundGame {...commonProps} />;
-    }
-  }, [weeklyWords, reviewWords, words, progress.registerResult, selectedMode]);
-
   const handleModeSelect = (mode: GameMode) => {
     setSelectedMode(mode);
-    setGameKey(Math.random());
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedMode(null);
+    router.push(`/games/${mode}`);
   };
 
   return (
@@ -124,36 +83,7 @@ export default function GamesPage() {
           </div>
         </section>
 
-        <Modal
-          isOpen={isModalOpen}
-          onRequestClose={closeModal}
-          className="modal-content"
-          overlayClassName="modal-overlay"
-          shouldCloseOnOverlayClick={false}
-        >
-          <div key={gameKey} className="h-full flex flex-col">
-            <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-200">
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={closeModal} 
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 transition text-slate-700 font-semibold text-sm"
-                >
-                  <span className="text-lg">←</span> Back to Games
-                </button>
-              </div>
-              <button 
-                onClick={closeModal} 
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition text-slate-600 text-2xl font-bold"
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {modeComponent}
-            </div>
-          </div>
-        </Modal>
+        {/* Full-page gameplay now handled at /games/[mode] */}
         </div>
       </div>
     </>

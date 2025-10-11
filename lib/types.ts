@@ -125,7 +125,8 @@ export type GameMode =
   | "definition-match"
   | "reverse-definition"
   | "fill-in-the-blank"
-  | "speed-round";
+  | "speed-round"
+  | "matching";
 
 export interface ModeStats {
   attempted: number;

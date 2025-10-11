@@ -7,6 +7,7 @@ import { useGamesSession } from "@/lib/hooks/useGamesSession";
 import { useGameProgress } from "@/lib/hooks/useGameProgress";
 
 const MODE_LABELS: Record<GameMode, string> = {
+  matching: "Matching",
   "definition-match": "Definition Match",
   "reverse-definition": "Reverse Mode",
   "fill-in-the-blank": "Fill in the Blank",
@@ -14,6 +15,7 @@ const MODE_LABELS: Record<GameMode, string> = {
 };
 
 const MODE_DESCRIPTIONS: Record<GameMode, string> = {
+  matching: "Match pairs or images",
   "definition-match": "Match definitions to new words to build familiarity.",
   "reverse-definition": "Show the word first and choose the correct meaning.",
   "fill-in-the-blank": "Use context sentences to select the right word.",

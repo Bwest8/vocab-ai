@@ -41,6 +41,12 @@ const modeDetails: Record<
 		icon: "⚡️",
 		color: "from-orange-500 to-amber-500",
 	},
+	"matching": {
+		title: "Matching Game",
+		description: "Match words with their definitions.",
+		icon: "🧩",
+		color: "from-pink-500 to-rose-500",
+	},
 };
 
 export function GameModeSelector({ selectedMode, modeStats, onSelect }: GameModeSelectorProps) {
