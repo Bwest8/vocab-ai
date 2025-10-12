@@ -53,3 +53,4 @@ next-env.d.ts
 storage_backup_*/
 
 /public/sw.js
+public/sw.js

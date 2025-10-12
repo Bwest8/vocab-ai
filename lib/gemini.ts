@@ -306,15 +306,20 @@ function normalizeGeminiResponse(parsed: unknown): { WORDS: GeminiVocabResponse[
 
 function normalizeGeminiWord(rawWord: unknown, wordIndex: number): GeminiVocabResponse {
   const record = isRecord(rawWord) ? rawWord : {};
-  const fallbackWord = `Word ${wordIndex + 1}`;
 
   const WORD = coerceToTrimmedString(
     lookupValue(record, ['WORD', 'word', 'term', 'vocab_word'])
-  ) ?? fallbackWord;
+  );
+  if (!WORD) {
+    throw new Error(`Missing WORD for word at index ${wordIndex}`);
+  }
 
   const DEFINITION = coerceToTrimmedString(
     lookupValue(record, ['DEFINITION', 'definition', 'student_definition', 'kid_definition'])
-  ) ?? `A kid-friendly explanation for "${WORD}".`;
+  );
+  if (!DEFINITION) {
+    throw new Error(`Missing DEFINITION for word "${WORD}"`);
+  }
 
   const TEACHER_DEFINITION = coerceToTrimmedString(
     lookupValue(record, [
@@ -324,15 +329,24 @@ function normalizeGeminiWord(rawWord: unknown, wordIndex: number): GeminiVocabRe
       'original_definition',
       'source_definition',
     ])
-  ) ?? DEFINITION;
+  );
+  if (!TEACHER_DEFINITION) {
+    throw new Error(`Missing TEACHER_DEFINITION for word "${WORD}"`);
+  }
 
   const PRONUNCIATION = coerceToTrimmedString(
     lookupValue(record, ['PRONUNCIATION', 'pronunciation', 'phonetic', 'pronounce'])
-  ) ?? `${WORD.toLowerCase().split(' ').join('-')}`;
+  );
+  if (!PRONUNCIATION) {
+    throw new Error(`Missing PRONUNCIATION for word "${WORD}"`);
+  }
 
   const PART_OF_SPEECH = coerceToTrimmedString(
     lookupValue(record, ['PART_OF_SPEECH', 'partOfSpeech', 'part_of_speech', 'pos'])
-  )?.toLowerCase() ?? 'noun';
+  );
+  if (!PART_OF_SPEECH) {
+    throw new Error(`Missing PART_OF_SPEECH for word "${WORD}"`);
+  }
 
   const EXAMPLES = normalizeGeminiExamples(record, WORD);
 
@@ -354,13 +368,11 @@ function normalizeGeminiExamples(
 
   const normalized = rawExamples.map((example, index) => normalizeSingleExample(example, word, index));
 
-  const bounded = normalized.slice(0, 5);
-
-  while (bounded.length < 5) {
-    bounded.push(createFallbackExample(word, bounded.length));
+  if (normalized.length !== 5) {
+    throw new Error(`Expected exactly 5 examples for word "${word}", but got ${normalized.length}`);
   }
 
-  return bounded;
+  return normalized;
 }
 
 function normalizeSingleExample(
@@ -412,13 +424,7 @@ function ensureSentence(
     return candidate;
   }
 
-  console.warn('Gemini example missing sentence; substituting fallback.', {
-    word,
-    exampleIndex,
-    rawExample,
-  });
-
-  return createFallbackExample(word, exampleIndex).sentence;
+  throw new Error(`Missing sentence for example ${exampleIndex} of word "${word}"`);
 }
 
 function ensureImageDescription(
@@ -432,61 +438,7 @@ function ensureImageDescription(
     return candidate;
   }
 
-  console.warn('Gemini example missing image description; substituting fallback.', {
-    word,
-    exampleIndex,
-    rawExample,
-  });
-
-  return createFallbackExample(word, exampleIndex, sentence).image_description;
-}
-
-function createFallbackExample(
-  word: string,
-  index: number,
-  sentenceOverride?: string
-): GeminiVocabResponse['EXAMPLES'][number] {
-  const names = ['Maya', 'Jordan', 'Sofia', 'Liam', 'Harper'];
-  const contexts = [
-    'in the science lab',
-    'during after-school art club',
-    'at soccer practice',
-    'during student council meeting',
-    'at family game night',
-  ];
-  const actions = [
-    `explains how "${word}" perfectly fits their project idea`,
-    `uses the word "${word}" to cheer on a teammate`,
-    `writes "${word}" on a poster to describe their plan`,
-    `shares a story where "${word}" becomes the key detail`,
-    `teaches siblings what "${word}" means`,
-  ];
-  const settings = [
-    `Show a bright classroom with desks pushed together, colorful science posters, and a focused student pointing to a diagram labeled "${word}". Include curious classmates leaning in to listen.`,
-    `Depict an art room filled with easels and paint splatters as a confident student explains how "${word}" inspires their mural while friends react with wide smiles.`,
-    `Illustrate a sunny soccer field where one player gestures mid-play, using "${word}" to encourage the team while others sprint across the grass.`,
-    `Capture a lively school meeting with clipboards, laptops, and posters; one student at the center presents an idea titled "${word}" as peers nod thoughtfully.`,
-    `Show a cozy living room with board games, snacks, and siblings laughing while a child proudly defines "${word}" to win the round.`,
-  ];
-  const moods = [
-    'curious and inspiring',
-    'vibrant and imaginative',
-    'energetic and motivational',
-    'focused and collaborative',
-    'warm and celebratory',
-  ];
-
-  const name = names[index % names.length];
-  const context = contexts[index % contexts.length];
-  const action = actions[index % actions.length];
-  const setting = settings[index % settings.length];
-  const mood = moods[index % moods.length];
-
-  const sentence = sentenceOverride ?? `${name} is ${context} and ${action}.`;
-
-  const image_description = `${setting} Highlight the student confidently using the word "${word}" while classmates react. The lighting should feel ${mood}.`;
-
-  return { sentence, image_description };
+  throw new Error(`Missing image description for example ${exampleIndex} of word "${word}"`);
 }
 
 function extractArray(value: unknown, fallbackKeys?: string[]): any[] {

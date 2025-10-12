@@ -67,10 +67,6 @@ export default function GamesPage() {
           <div className="text-center">
             <div className="mb-6">
               <p className="text-base md:text-lg uppercase tracking-wide text-indigo-600 font-semibold mb-2">Choose a mode</p>
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Pick your adventure!</h2>
-              <p className="text-base md:text-lg text-slate-600 mt-2 max-w-3xl mx-auto">
-                Complete three correct answers in each mode to light up the schedule trail and unlock your mastery badge!
-              </p>
             </div>
 
             <GameModeSelector

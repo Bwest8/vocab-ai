@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { generateExampleImage } from '@/lib/gemini';
+import { generateExampleImage } from '@/lib/geminiCreateImage';
 
 export async function POST(
   request: Request,

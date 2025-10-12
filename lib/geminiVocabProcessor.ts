@@ -100,7 +100,7 @@ export async function processVocabularyWords(
   "- Describe the **action** or event taking place.",
   "- Convey the **emotion** or mood of the scene.",
   "- Specify the **setting** (where the scene occurs).",
-  "- Include one **visual style cue** (e.g., 'the scene should feel adventurous and bright' or 'drawn like a National Geographic Kids illustration').",
+
 
   // Style & tone
   "Maintain a warm, engaging tone suitable for upper-elementary students.",
