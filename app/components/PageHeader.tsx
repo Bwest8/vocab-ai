@@ -77,33 +77,6 @@ export default function PageHeader({
             )}
           </div>
         </div>
-        {showVocabSetSelector && (
-          <div className="mt-3 flex items-center gap-3 sm:hidden">
-            <select
-              id="vocab-set-selector-mobile"
-              value={selectedSetId}
-              onChange={(event) => onSelectSet?.(event.target.value)}
-              className={cn(
-                "flex h-8 w-fit items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50",
-                "text-foreground placeholder:text-muted-foreground"
-              )}
-            >
-              {vocabSets.length === 0 ? (
-                <option value="" disabled className="text-muted-foreground">
-                  No vocabulary sets available
-                </option>
-              ) : (
-                vocabSets.map((set) => (
-                  <option key={set.id} value={set.id} className="text-foreground">
-                    {set.name}
-                      {set.words ? ` (${set.words.length})` : ""}
-                    </option>
-                  ))
-                )}
-              </select>
-              {isLoading && <span className="text-xs text-slate-400">Loading words…</span>}
-            </div>
-          )}
         {showVocabSetSelector && children && (
           <div className="mt-3 flex items-center gap-3">
             {children}
