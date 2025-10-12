@@ -1,6 +1,7 @@
 "use client";
 
 import HamburgerMenu from "./HamburgerMenu";
+import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
   title: string;
@@ -45,30 +46,30 @@ export default function PageHeader({
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
             {showVocabSetSelector && (
-              <div className="hidden sm:flex flex-col gap-1">
-                <label htmlFor="vocab-set-selector" className="text-xs font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap">
-                  Active vocab set
-                </label>
-                <select
-                  id="vocab-set-selector"
-                  value={selectedSetId}
-                  onChange={(event) => onSelectSet?.(event.target.value)}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-indigo-400 focus:ring focus:ring-indigo-100 min-w-[200px]"
-                >
-                  {vocabSets.length === 0 ? (
-                    <option value="">No vocabulary sets available</option>
-                  ) : (
-                    vocabSets.map((set) => (
-                      <option key={set.id} value={set.id}>
-                        {set.name}
-                        {set.words ? ` (${set.words.length})` : ""}
-                      </option>
-                    ))
-                  )}
-                </select>
-                {isLoading && <span className="text-xs text-slate-400">Loading words…</span>}
-              </div>
+              <select
+                id="vocab-set-selector"
+                value={selectedSetId}
+                onChange={(event) => onSelectSet?.(event.target.value)}
+                className={cn(
+                  "flex h-9 w-fit items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 min-w-[200px]",
+                  "text-foreground placeholder:text-muted-foreground"
+                )}
+              >
+                {vocabSets.length === 0 ? (
+                  <option value="" disabled className="text-muted-foreground">
+                    No vocabulary sets available
+                  </option>
+                ) : (
+                  vocabSets.map((set) => (
+                    <option key={set.id} value={set.id} className="text-foreground">
+                      {set.name}
+                      {set.words ? ` (${set.words.length})` : ""}
+                    </option>
+                  ))
+                )}
+              </select>
             )}
+            {showVocabSetSelector && isLoading && <span className="text-xs text-slate-400">Loading words…</span>}
             {!showVocabSetSelector && children && (
               <div className="flex items-center gap-3">
                 {children}
@@ -78,29 +79,29 @@ export default function PageHeader({
         </div>
         {showVocabSetSelector && (
           <div className="mt-3 flex items-center gap-3 sm:hidden">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="vocab-set-selector-mobile" className="text-xs font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap">
-                Active vocab set
-              </label>
-              <select
-                id="vocab-set-selector-mobile"
-                value={selectedSetId}
-                onChange={(event) => onSelectSet?.(event.target.value)}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-indigo-400 focus:ring focus:ring-indigo-100"
-              >
-                {vocabSets.length === 0 ? (
-                  <option value="">No vocabulary sets available</option>
-                ) : (
-                  vocabSets.map((set) => (
-                    <option key={set.id} value={set.id}>
-                      {set.name}
-                        {set.words ? ` (${set.words.length})` : ""}
-                      </option>
-                    ))
-                  )}
-                </select>
-                {isLoading && <span className="text-xs text-slate-400">Loading words…</span>}
-              </div>
+            <select
+              id="vocab-set-selector-mobile"
+              value={selectedSetId}
+              onChange={(event) => onSelectSet?.(event.target.value)}
+              className={cn(
+                "flex h-8 w-fit items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50",
+                "text-foreground placeholder:text-muted-foreground"
+              )}
+            >
+              {vocabSets.length === 0 ? (
+                <option value="" disabled className="text-muted-foreground">
+                  No vocabulary sets available
+                </option>
+              ) : (
+                vocabSets.map((set) => (
+                  <option key={set.id} value={set.id} className="text-foreground">
+                    {set.name}
+                      {set.words ? ` (${set.words.length})` : ""}
+                    </option>
+                  ))
+                )}
+              </select>
+              {isLoading && <span className="text-xs text-slate-400">Loading words…</span>}
             </div>
           )}
         {showVocabSetSelector && children && (

@@ -217,7 +217,27 @@ export function WordScrambleGame({ weeklyWords, allWords, onResult, gameKey }: B
               for (let t = 0; t < 5 && next === scrambled && letters.length > 1; t += 1) {
                 next = shuffle(letters).join("");
               }
+              // Update usedIndices to match new positions
+              const oldPositions = new Map<string, number[]>();
+              scrambled.split("").forEach((letter, idx) => {
+                if (!oldPositions.has(letter)) oldPositions.set(letter, []);
+                oldPositions.get(letter)!.push(idx);
+              });
+              const newPositions = new Map<string, number[]>();
+              next.split("").forEach((letter, idx) => {
+                if (!newPositions.has(letter)) newPositions.set(letter, []);
+                newPositions.get(letter)!.push(idx);
+              });
+              const newUsedIndices: number[] = [];
+              for (const [letter, oldPos] of oldPositions) {
+                const usedForLetter = usedIndices.filter(idx => oldPos.includes(idx)).sort((a, b) => a - b);
+                const newPos = newPositions.get(letter)!;
+                usedForLetter.forEach((_, i) => {
+                  newUsedIndices.push(newPos[i]);
+                });
+              }
               setScrambled(next);
+              setUsedIndices(newUsedIndices);
               setReshuffles((r) => r + 1);
             }}
             className="rounded-full border-2 border-indigo-300 bg-white px-4 py-2 text-base font-bold text-indigo-700 shadow hover:bg-indigo-50 hover:border-indigo-400 transition"

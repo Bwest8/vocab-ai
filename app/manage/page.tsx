@@ -425,8 +425,6 @@ export default function ManagePage() {
     <>
       <PageHeader
         title="Vocabulary Management"
-        subtitle="Parent Dashboard"
-        description="Manage your child's vocabulary sets and words. Keep track of definitions, pronunciations, and examples."
         showVocabSetSelector={false}
       />
 

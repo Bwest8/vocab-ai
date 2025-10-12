@@ -87,8 +87,6 @@ n. someone who buys and sells things; the owner of a store (merchants) (30)`;
     <>
       <PageHeader
         title="Create Vocabulary Set"
-        subtitle="Build your collection"
-        description="Build a complete learning experience from your word list. AI will add definitions, pronunciations, and example sentences."
         showVocabSetSelector={false}
       />
 

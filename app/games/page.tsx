@@ -42,8 +42,6 @@ export default function GamesPage() {
     <>
       <PageHeader
         title="Games Lab"
-        subtitle="Weekly word adventures"
-        description="Choose your favorite game mode and master this week's vocabulary words! Keep your streak alive and collect stars along the way!"
         vocabSets={vocabSets}
         selectedSetId={selectedSetId}
         onSelectSet={handleSelectSet}

@@ -81,8 +81,6 @@ export default function ParentDashboardPage() {
     <>
       <PageHeader
         title="Parent Dashboard"
-        subtitle="Caregiver Overview"
-        description="Track this week's vocabulary practice, celebrate milestones, and spot the modes that need a little extra encouragement."
         vocabSets={vocabSets}
         selectedSetId={selectedSetId}
         onSelectSet={handleSelectSet}

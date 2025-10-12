@@ -55,8 +55,6 @@ export default function StudyPage() {
     <>
       <PageHeader
         title="Study Flashcards"
-        subtitle="Master your vocabulary"
-        description="Review your vocabulary words with interactive flashcards. Mark your progress as you learn!"
         vocabSets={vocabSets}
         selectedSetId={selectedSetId}
         onSelectSet={handleSelectSet}
