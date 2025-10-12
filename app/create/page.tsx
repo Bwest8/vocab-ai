@@ -1,39 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 
 export default function CreateVocabPage() {
   const [vocabSetName, setVocabSetName] = useState('');
-  const [grade, setGrade] = useState('');
+  const [grade, setGrade] = useState('04');
   const [description, setDescription] = useState('');
   const [rawText, setRawText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const exampleText = `Humble
-Adj Not thinking you are better than other; modest; not extravagant
-Curfew
-n. an order or law requiring people to be in their homes at a certain time, usually at night (33)
-Fuel
-v. to give strength to or cause something to happen (fueled) (30)
-Summon
-V To call or send for someone
-Devote
-V To give time or attention to something
-Advise
-V To give a suggestion about how something should be done
-Destined
-Adj Certain to become something or do something
-Apprentice
-N A person who learns a skill or trade by working with a skilled craftsman for a period of time, usually for no pay
-Thrive
-V To grow and succeed
-Anchored
-Adj Strongly connected
-Merchant
-n. someone who buys and sells things; the owner of a store (merchants) (30)`;
+  useEffect(() => {
+    const fetchNextLesson = async () => {
+      try {
+        const response = await fetch('/api/vocab');
+        if (!response.ok) throw new Error('Failed to fetch vocab sets');
+        const sets = await response.json();
+        const lessonNumbers = sets
+          .map((set: any) => set.name)
+          .filter((name: string) => name.startsWith('Lesson '))
+          .map((name: string) => parseInt(name.replace('Lesson ', '')))
+          .filter((num: number) => !isNaN(num));
+        const maxNum = lessonNumbers.length > 0 ? Math.max(...lessonNumbers) : 0;
+        const nextNum = maxNum + 1;
+        setVocabSetName(`Lesson ${nextNum}`);
+      } catch (error) {
+        console.error('Failed to fetch next lesson number:', error);
+        setVocabSetName('Lesson 1');
+      }
+    };
+    fetchNextLesson();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,13 +75,6 @@ n. someone who buys and sells things; the owner of a store (merchants) (30)`;
     }
   };
 
-  const loadExample = () => {
-    setRawText(exampleText);
-    setVocabSetName('Lesson 4');
-    setGrade('5th Grade');
-    setDescription('Vocabulary words from Lesson 4');
-  };
-
   return (
     <>
       <PageHeader
@@ -118,14 +110,16 @@ n. someone who buys and sells things; the owner of a store (merchants) (30)`;
                   <label htmlFor="grade" className="block text-sm font-bold text-slate-700 mb-2">
                     Grade Level
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="grade"
                     value={grade}
                     onChange={(e) => setGrade(e.target.value)}
-                    placeholder="e.g., 5th Grade"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-slate-900 placeholder-slate-400 transition-all"
-                  />
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-slate-900 transition-all"
+                  >
+                    <option value="04">4th Grade</option>
+                    <option value="05">5th Grade</option>
+                    <option value="06">6th Grade</option>
+                  </select>
                 </div>
 
                 <div>
@@ -178,15 +172,6 @@ n. someone who buys and sells things; the owner of a store (merchants) (30)`;
                 ) : (
                   '✨ Create Set'
                 )}
-              </button>
-
-              <button
-                type="button"
-                onClick={loadExample}
-                disabled={isProcessing}
-                className="px-6 py-3 border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-              >
-                Load Example
               </button>
             </div>
           </form>
