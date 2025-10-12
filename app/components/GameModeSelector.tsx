@@ -47,6 +47,12 @@ const modeDetails: Record<
 		icon: "🧩",
 		color: "from-pink-500 to-rose-500",
 	},
+		"word-scramble": {
+			title: "Word Scramble",
+			description: "Unscramble letters to find the word.",
+			icon: "🔤",
+			color: "from-indigo-600 to-violet-500",
+		},
 };
 
 export function GameModeSelector({ selectedMode, modeStats, onSelect }: GameModeSelectorProps) {

@@ -12,6 +12,7 @@ const MODE_LABELS: Record<GameMode, string> = {
   "reverse-definition": "Reverse Mode",
   "fill-in-the-blank": "Fill in the Blank",
   "speed-round": "Speed Round",
+  "word-scramble": "Word Scramble",
 };
 
 const MODE_DESCRIPTIONS: Record<GameMode, string> = {
@@ -20,6 +21,7 @@ const MODE_DESCRIPTIONS: Record<GameMode, string> = {
   "reverse-definition": "Show the word first and choose the correct meaning.",
   "fill-in-the-blank": "Use context sentences to select the right word.",
   "speed-round": "Timed review that boosts confidence and recall.",
+  "word-scramble": "Unscramble letters to find the correct word.",
 };
 
 const MODE_ORDER: GameMode[] = [
@@ -27,6 +29,7 @@ const MODE_ORDER: GameMode[] = [
   "reverse-definition",
   "fill-in-the-blank",
   "speed-round",
+  "word-scramble",
 ];
 
 export default function ParentDashboardPage() {

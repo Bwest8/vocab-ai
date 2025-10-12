@@ -4,3 +4,4 @@ export { ReverseDefinitionGame } from "./ReverseDefinitionGame";
 export { FillInTheBlankGame } from "./FillInTheBlankGame";
 export { SpeedRoundGame } from "./SpeedRoundGame";
 export { MatchingGame } from "./MatchingGame";
+export { WordScrambleGame } from "./WordScrambleGame";

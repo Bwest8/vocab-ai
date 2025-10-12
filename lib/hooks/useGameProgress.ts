@@ -9,6 +9,7 @@ const GAME_MODES: GameMode[] = [
   "fill-in-the-blank",
   "speed-round",
   "matching",
+  "word-scramble",
 ];
 
 const COMPLETION_THRESHOLD = 3;
@@ -20,6 +21,7 @@ const createInitialModeStats = (): Record<GameMode, SharedModeStats> => ({
   "fill-in-the-blank": { attempted: 0, correct: 0 },
   "speed-round": { attempted: 0, correct: 0 },
   "matching": { attempted: 0, correct: 0 },
+  "word-scramble": { attempted: 0, correct: 0 },
 });
 
 export type ModeStats = SharedModeStats;

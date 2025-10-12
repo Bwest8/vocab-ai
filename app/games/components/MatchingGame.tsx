@@ -115,22 +115,22 @@ export function MatchingGame({ weeklyWords, reviewWords, allWords, onResult, gam
   }
 
   return (
-    <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-pink-100/70 backdrop-blur-sm">
+    <div className="rounded-2xl border border-pink-100 bg-white/95 p-4 md:p-5 shadow-sm">
       {/* Progress Header */}
-      <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-pink-50 px-5 py-4 border border-pink-200">
+      <div className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-pink-50/80 px-4 py-3 border border-pink-200">
         <div className="flex items-center gap-3">
-          <div className="text-3xl">🧩</div>
+          <div className="text-2xl">🧩</div>
           <div>
-            <h2 className="text-lg font-bold text-pink-900">Matching Game</h2>
-            <p className="text-sm text-pink-600">Match words with definitions</p>
+            <h2 className="text-base md:text-lg font-bold text-pink-900 leading-tight">Matching Game</h2>
+            <p className="text-xs md:text-sm text-pink-600 leading-tight">Match words with definitions</p>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-end gap-1.5">
           <div className="flex gap-1">
             {Array.from({ length: gameWords.length }).map((_, idx) => (
               <div
                 key={idx}
-                className={`h-2 w-2 rounded-full transition-all ${
+                className={`h-1.5 w-1.5 rounded-full transition-all ${
                   idx < matches
                     ? "bg-pink-600"
                     : "bg-pink-200"
@@ -138,33 +138,33 @@ export function MatchingGame({ weeklyWords, reviewWords, allWords, onResult, gam
               />
             ))}
           </div>
-          <p className="text-xs font-semibold text-pink-700">
+          <p className="text-[11px] font-semibold text-pink-700">
             {matches}/{gameWords.length} matched
           </p>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="mb-6 flex items-center justify-center gap-8 text-center">
+      <div className="mb-3 flex items-center justify-center gap-6 text-center">
         <div>
-          <div className="text-3xl font-bold text-pink-600">{matches}</div>
-          <div className="text-sm text-muted-foreground">Matches</div>
+          <div className="text-2xl font-bold text-pink-600 leading-none">{matches}</div>
+          <div className="text-xs text-muted-foreground">Matches</div>
         </div>
         <div>
-          <div className="text-3xl font-bold text-pink-600">{attempts}</div>
-          <div className="text-sm text-muted-foreground">Attempts</div>
+          <div className="text-2xl font-bold text-pink-600 leading-none">{attempts}</div>
+          <div className="text-xs text-muted-foreground">Attempts</div>
         </div>
       </div>
 
       {/* Game Board */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
         {cards.map((card) => (
           <button
             key={card.id}
             type="button"
-            className={`rounded-2xl border p-4 text-center transition-all hover:scale-105 min-h-[100px] md:min-h-[120px] ${
+            className={`rounded-xl border p-3 md:p-4 text-center transition-all hover:scale-[1.02] min-h-[90px] md:min-h-[110px] ${
               card.isMatched
-                ? "bg-pink-100 border-pink-400 opacity-50"
+                ? "bg-pink-100 border-pink-400 opacity-60"
                 : selectedCards.includes(card.id)
                   ? "bg-pink-200 border-pink-500 scale-105"
                   : "bg-white border-pink-200 hover:border-pink-400"
@@ -173,7 +173,7 @@ export function MatchingGame({ weeklyWords, reviewWords, allWords, onResult, gam
           >
             <p
               className={`font-semibold leading-relaxed ${
-                card.type === "word" ? "text-lg md:text-xl text-pink-700" : "text-sm md:text-base text-slate-700"
+                card.type === "word" ? "text-base md:text-lg text-pink-700" : "text-[13px] md:text-sm text-slate-700"
               }`}
             >
               {card.content}
@@ -184,17 +184,17 @@ export function MatchingGame({ weeklyWords, reviewWords, allWords, onResult, gam
 
       {/* Completion Message */}
       {isComplete && (
-        <div className="mt-8">
-          <div className="rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 text-white p-6 text-center">
-            <div className="text-4xl mb-2">🎉</div>
-            <h3 className="text-xl font-bold mb-2">Congratulations!</h3>
-            <p className="text-lg mb-4">
+        <div className="mt-6">
+          <div className="rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white p-5 text-center">
+            <div className="text-3xl mb-1.5">🎉</div>
+            <h3 className="text-lg font-bold mb-1">Congratulations!</h3>
+            <p className="text-base mb-3">
               You matched all {matches} pairs in {attempts} attempts!
             </p>
             <button
               type="button"
               onClick={initializeGame}
-              className="rounded-full bg-white text-pink-600 px-6 py-2 font-semibold hover:bg-pink-50 transition"
+              className="rounded-full bg-white text-pink-600 px-5 py-1.5 font-semibold hover:bg-pink-50 transition"
             >
               Play Again
             </button>

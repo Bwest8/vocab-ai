@@ -126,7 +126,8 @@ export type GameMode =
   | "reverse-definition"
   | "fill-in-the-blank"
   | "speed-round"
-  | "matching";
+  | "matching"
+  | "word-scramble";
 
 export interface ModeStats {
   attempted: number;

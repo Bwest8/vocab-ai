@@ -30,6 +30,7 @@ const POINTS: Record<GameMode, number> = {
   "fill-in-the-blank": 14,
   "speed-round": 8,
   "matching": 10,
+  "word-scramble": 10,
 };
 
 const shuffle = <T,>(array: T[]) => {
