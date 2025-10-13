@@ -1,84 +1,94 @@
 # 🎓 Vocab AI
 
-An AI-powered vocabulary learning application for elementary students, built with Next.js, Vercel AI SDK, and Google Gemini.
+AI-powered vocabulary learning for grades 4–6 built with Next.js 15, PostgreSQL (Prisma), Google Gemini, xAI Grok, and ElevenLabs.
 
 ## Features
 
-- 🤖 **AI-Generated Content**: Automatic definitions, examples, and custom illustrations for each word
-- 📊 **Progress Tracking**: Monitor mastery levels (0-5 scale) and identify words that need more practice
-- 🎯 **Interactive Games**: Matching games and quizzes make learning fun and engaging
-- 🎴 **Flashcards**: Study with interactive flashcards
-- ⭐ **Mastery System**: 6-level system from "Not Learned" to "Expert"
+- 🤖 AI batch processing: paste raw word/definition text, generate structured lessons in one call
+- 🖼️ On-demand images: generate illustrations per example sentence when needed
+- 🔊 Text-to-speech with caching (ElevenLabs)
+- 🎴 Flashcards and 📊 mastery tracking (0–5)
+- 🎮 Multiple game modes with scoring and a weekly practice profile
+- 💾 Custom storage for audio/images served via API routes (production safe)
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 with App Router
-- **AI**: Vercel AI SDK + Google Gemini
-- **Database**: PostgreSQL with Prisma ORM
-- **Styling**: Tailwind CSS
-- **Language**: TypeScript
+- Framework: Next.js 15 (App Router, Turbopack in dev)
+- AI: xAI Grok (default) for text processing, Google Gemini as fallback; Gemini 2.5 Flash Image for images
+- Database: PostgreSQL 18 via Prisma ORM
+- Styling: Tailwind CSS v4 + shadcn/ui base components
+- Language: TypeScript
 
 ## Prerequisites
 
 - Node.js 18+ and npm
-- Docker (for PostgreSQL)
-- Google Gemini API key ([Get one here](https://aistudio.google.com/app/apikey))
+- Local Supabase (PostgreSQL) running on your machine
+- API keys: Google Gemini, xAI Grok, ElevenLabs
 
 ## Getting Started
 
-### 1. Clone and Install
+### 1) Install dependencies
 
 ```bash
 cd vocab-ai
 npm install
 ```
 
-### 2. Set Up Environment Variables
+### 2) Set up environment variables
 
 Create a `.env.local` file in the root directory:
 
 ```env
-# Google AI (Gemini) API Key
-GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key_here
+# Database (local Supabase default ports)
+DATABASE_URL="postgresql://postgres:postgres@localhost:54322/postgres"
 
-# Database
-DATABASE_URL="postgresql://postgres:password@localhost:5432/vocab_ai?schema=public"
+# AI (text/image)
+GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_image_api_key   # Gemini images
+GEMINI_API_KEY=your_gemini_text_api_key                  # Gemini text (fallback processor)
+XAI_API_KEY=your_xai_grok_api_key                        # Default vocab processor
+GROK_MODEL_ID=grok-4-fast                                # optional override
+GEMINI_TEXT_MODEL_ID=gemini-2.5-flash                    # optional override
+
+# TTS (audio)
+ELEVENLABS_API_KEY=your_elevenlabs_key
+
+# Custom storage (absolute paths)
+VOCAB_IMAGES_DIR=/absolute/path/to/storage/vocab-sets
+TTS_CACHE_DIR=/absolute/path/to/storage/audio/tts
 ```
 
-### 3. Start PostgreSQL Database
+### 3) Ensure local Supabase is running
 
-Using Docker Compose:
+- Supabase Studio (UI): http://localhost:54323/
+- Postgres host/port: localhost:54322
+- Verify your `DATABASE_URL` points to the local Supabase Postgres instance (see above)
 
-```bash
-docker-compose up -d
-```
-
-This will start a PostgreSQL container on port 5432.
-
-### 4. Run Database Migrations
+### 4) Run database migrations
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-This creates the database schema with tables for:
-- `vocab_sets`: Vocabulary collections (e.g., "Week 1")
-- `vocab_words`: Individual words with definitions and images
-- `study_progress`: Track student mastery levels
+Creates schema:
+- `vocab_sets` (collections)
+- `vocab_words` (words + relations)
+- `vocab_examples` (sentences + image descriptions + urls)
+- `study_progress` (0–5 mastery)
+- `game_profiles` and `game_mode_progress` (weekly practice)
 
-### 5. Generate Prisma Client
+### 5) Generate Prisma client
 
 ```bash
 npx prisma generate
 ```
 
-### 6. Start Development Server
+### 6) Start development server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the app!
+Open http://localhost:3000
 
 ## Project Structure
 
@@ -87,54 +97,80 @@ vocab-ai/
 ├── app/
 │   ├── api/
 │   │   ├── vocab/
-│   │   │   ├── process/route.ts    # Process new vocabulary with AI
-│   │   │   ├── [id]/route.ts       # Get specific vocab set
-│   │   │   └── route.ts            # List all vocab sets
-│   │   └── progress/route.ts       # Track learning progress
+│   │   │   ├── create/route.ts                       # AI batch processing (xAI Grok default)
+│   │   │   ├── [id]/route.ts                         # Get/update/delete a vocab set
+│   │   │   ├── [id]/images/route.ts                  # DELETE clear set images
+│   │   │   ├── [id]/examples/[exampleId]/generate-image/route.ts  # On-demand image gen
+│   │   │   └── route.ts                              # List all vocab sets
+│   │   ├── images/vocab-sets/[...path]/route.ts      # Serve images from custom storage
+│   │   ├── tts/route.ts                              # ElevenLabs TTS with caching
+│   │   ├── audio/tts/[filename]/route.ts             # Serve cached TTS audio
+│   │   ├── games/profile/route.ts                    # Weekly profile
+│   │   └── games/progress/route.ts                   # Game progress tracking
 │   ├── layout.tsx
 │   └── page.tsx                    # Homepage
 ├── lib/
-│   ├── gemini.ts                   # Gemini AI utilities
+│   ├── gemini.ts                   # Gemini client helpers
+│   ├── geminiCreateImage.ts        # Generate and persist images
 │   └── prisma.ts                   # Prisma client
 ├── prisma/
 │   └── schema.prisma               # Database schema
-├── docker-compose.yml              # PostgreSQL setup
 └── .env.local                      # Environment variables (create this!)
 ```
 
 ## API Routes
 
-### POST `/api/vocab/process`
-Process new vocabulary words with AI
+### POST /api/vocab/create
+Create a new set by pasting raw word+definition text. The AI parses all words in one request and returns 5 examples per word. On success, words and examples are written to the DB.
 
+Payload:
 ```json
 {
-  "words": ["aspiring", "rival", "tradition"],
-  "vocabSetName": "Week 1",
+  "rawText": "1) WORD — definition...\n2) ...",
+  "vocabSetName": "Lesson 12",
   "description": "Weekly vocabulary",
-  "grade": "3rd Grade"
+  "grade": "5th Grade"
 }
 ```
 
-### GET `/api/vocab`
-List all vocabulary sets
+### GET /api/vocab
+List all sets (with word IDs/names)
 
-### GET `/api/vocab/[id]`
-Get a specific vocabulary set with all words
+### GET /api/vocab/[id]
+Get a set with `words`, `examples`, and study `progress`
 
-### POST `/api/progress`
-Update learning progress
+### PATCH /api/vocab/[id]
+Update set name/description/grade
 
-```json
-{
-  "wordId": "clx123...",
-  "isCorrect": true,
-  "userId": null
-}
-```
+### DELETE /api/vocab/[id]
+Delete set and cascade words/examples; also deletes any image files on disk
 
-### GET `/api/progress`
-Get progress for all words or a specific word
+### DELETE /api/vocab/[id]/images
+Remove all generated images for a set and clear `imageUrl` fields
+
+### POST /api/vocab/[id]/examples/[exampleId]/generate-image
+Generate an illustration for one example using its `imageDescription`. Files are saved under `$VOCAB_IMAGES_DIR/{setId}/...` and served via `/api/images/vocab-sets/{setId}/{filename}`.
+
+### GET /api/images/vocab-sets/[...path]
+Serve images from `$VOCAB_IMAGES_DIR` with proper MIME and long cache
+
+### GET /api/tts?text=hello&voiceId=...
+Generate TTS audio with caching. Returns `{ url: "/api/audio/tts/{hash}.mp3" }`.
+
+### GET /api/audio/tts/[filename]
+Serve cached TTS files from `$TTS_CACHE_DIR`
+
+### POST /api/progress
+Update study progress per word (mastery 0–5)
+
+### GET /api/progress
+Fetch progress records (optionally filter by `wordId`/`userId`)
+
+### GET /api/games/profile?setId=...&profileKey=default
+Get or create the weekly practice profile and per-mode progress for a set
+
+### POST /api/games/progress
+Record a game result for the active set and mode; updates points, streak, combo, and per-mode stats
 
 ## Database Schema
 
@@ -177,35 +213,31 @@ npm run build
 # Start production server
 npm start
 
-# Database commands
-npx prisma studio              # Open database GUI
-npx prisma migrate dev         # Create new migration
-npx prisma migrate reset       # Reset database
-npx prisma generate            # Regenerate Prisma Client
+# Database (package.json scripts)
+npm run db:studio
+npm run db:migrate
+npm run db:reset
+npm run db:generate
+npm run db:push        # dev-only schema push
 
-# Docker commands
-docker-compose up -d           # Start PostgreSQL
-docker-compose down            # Stop PostgreSQL
-docker-compose logs -f         # View logs
+# Supabase (local)
+# Studio UI: http://localhost:54323/
+# Postgres:   localhost:54322
 ```
 
 ## Next Steps
 
-1. **Create Vocabulary**: Use the `/create` page to add new words
-2. **Study Flashcards**: Review words on the `/study` page
-3. **Play Games**: Reinforce learning with `/games`
-4. **Track Progress**: View mastery levels on the dashboard
+1) Create a new set: use the Create page (`/create`) and paste raw word text
+2) Study: review with flashcards (`/study`)
+3) Games: practice modes under `/games` (Definition Match, Reverse Definition, Fill in the Blank, Speed Round, Matching, Word Scramble)
+4) Images: generate per-example illustrations on demand
 
-## Planned Features
+## Notes & Gotchas
 
-- 🖼️ Image generation with Gemini
-- 🎮 Memory matching game
-- ❓ Multiple-choice quiz mode
-- 📈 Progress dashboard
-- 🔄 Spaced repetition algorithm
-- 👥 Multi-user support
-- 🎨 Custom themes
-- 📱 Mobile app (React Native)
+- Image and audio are served via API routes to support custom storage in production (Next.js static server won’t follow symlinks)
+- Set `VOCAB_IMAGES_DIR` and `TTS_CACHE_DIR` to absolute paths
+- Game profiles use `profileKey` (default "default"); there is no userId-based auth
+- Some dev configs don’t apply with Turbopack; build-time PWA settings are production-only
 
 ## License
 
@@ -214,8 +246,7 @@ MIT
 ## Credits
 
 Built with ❤️ using:
-- [Next.js](https://nextjs.org)
-- [Vercel AI SDK](https://sdk.vercel.ai)
-- [Google Gemini](https://ai.google.dev)
-- [Prisma](https://prisma.io)
-- [Tailwind CSS](https://tailwindcss.com)
+- Next.js
+- Google Gemini + xAI Grok
+- Prisma
+- Tailwind CSS
