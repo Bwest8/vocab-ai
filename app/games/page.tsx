@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import PageHeader from "../components/PageHeader";
+import Header from "../components/Header";
 import type { GameMode } from "@/lib/types";
 import { GameModeSelector } from "@/app/components/GameModeSelector";
 import { useGamesSession } from "@/lib/hooks/useGamesSession";
@@ -40,7 +40,7 @@ export default function GamesPage() {
 
   return (
     <>
-      <PageHeader
+      <Header
         title="Games Lab"
         vocabSets={vocabSets}
         selectedSetId={selectedSetId}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import PageHeader from '../components/PageHeader';
+import Header from '../components/Header';
 import type { VocabSet, VocabWord, VocabExample } from '@/lib/types';
 import {
   BookOpenCheck,
@@ -423,7 +423,7 @@ export default function ManagePage() {
 
   return (
     <>
-      <PageHeader
+      <Header
         title="Vocabulary Management"
         showVocabSetSelector={false}
       />

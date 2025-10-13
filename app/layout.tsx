@@ -41,6 +41,9 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#4f46e5" />
+        {/* iOS status bar style */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Vocab AI" />
       </head>
         <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-slate-50`}>

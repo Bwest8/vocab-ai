@@ -1,6 +1,6 @@
 "use client";
 
-import PageHeader from "../components/PageHeader";
+import Header from "../components/Header";
 import { StudyControls } from "./components/StudyControls";
 import { StudyFlashcard } from "./components/StudyFlashcard";
 import { StudyImageModal } from "./components/StudyImageModal";
@@ -53,7 +53,7 @@ export default function StudyPage() {
 
   return (
     <>
-      <PageHeader
+      <Header
         title="Study Flashcards"
         vocabSets={vocabSets}
         selectedSetId={selectedSetId}

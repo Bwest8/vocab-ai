@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import PageHeader from '../components/PageHeader';
+import Header from '../components/Header';
 
 export default function CreateVocabPage() {
   const [vocabSetName, setVocabSetName] = useState('');
@@ -77,7 +77,7 @@ export default function CreateVocabPage() {
 
   return (
     <>
-      <PageHeader
+      <Header
         title="Create Vocabulary Set"
         showVocabSetSelector={false}
       />

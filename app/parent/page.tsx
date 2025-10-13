@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import PageHeader from "../components/PageHeader";
+import Header from "../components/Header";
 import type { GameMode } from "@/lib/types";
 import { useGamesSession } from "@/lib/hooks/useGamesSession";
 import { useGameProgress } from "@/lib/hooks/useGameProgress";
@@ -79,14 +79,13 @@ export default function ParentDashboardPage() {
 
   return (
     <>
-      <PageHeader
+      <Header
         title="Parent Dashboard"
         vocabSets={vocabSets}
         selectedSetId={selectedSetId}
         onSelectSet={handleSelectSet}
-      >
-        {selectedSetId && (
-          <>
+        rightSlot={selectedSetId ? (
+          <div className="hidden md:flex items-center gap-3">
             <button
               onClick={() => window.open(`/parent/print-matching/${selectedSetId}`, '_blank')}
               className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold shadow-md transition hover:bg-blue-700"
@@ -100,9 +99,9 @@ export default function ParentDashboardPage() {
             >
               {isResetting ? 'Resetting...' : '🔄 Reset Progress'}
             </button>
-          </>
-        )}
-      </PageHeader>
+          </div>
+        ) : null}
+      />
 
       <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-24 pt-6 md:pt-8">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
