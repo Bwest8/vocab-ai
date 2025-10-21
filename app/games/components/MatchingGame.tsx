@@ -88,6 +88,12 @@ export function MatchingGame({ weeklyWords, reviewWords, allWords, onResult, gam
 
       if (card1 && card2 && card1.matchId === card2.matchId) {
         // Match found!
+        onResult({
+          mode: "matching",
+          correct: true,
+          pointsAwarded: 10,
+        });
+        
         setTimeout(() => {
           setCards(cards.map((c) => (c.id === card1.id || c.id === card2.id ? { ...c, isMatched: true } : c)));
           setMatches(matches + 1);
@@ -99,6 +105,12 @@ export function MatchingGame({ weeklyWords, reviewWords, allWords, onResult, gam
         }, 500);
       } else {
         // No match
+        onResult({
+          mode: "matching",
+          correct: false,
+          pointsAwarded: 0,
+        });
+        
         setTimeout(() => {
           setSelectedCards([]);
         }, 1000);

@@ -29,6 +29,7 @@ const MODE_ORDER: GameMode[] = [
   "reverse-definition",
   "fill-in-the-blank",
   "speed-round",
+  "matching",
   "word-scramble",
 ];
 

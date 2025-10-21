@@ -12,6 +12,16 @@ const GAME_MODES: GameMode[] = [
   "word-scramble",
 ];
 
+// Approximate points per correct answer per mode
+const MODE_POINTS: Record<GameMode, number> = {
+  "definition-match": 10,
+  "reverse-definition": 12,
+  "fill-in-the-blank": 14,
+  "speed-round": 10, // Variable with time bonus, using average
+  "matching": 10,
+  "word-scramble": 11,
+};
+
 const COMPLETION_THRESHOLD = 3;
 const DEFAULT_PROFILE_KEY = "default"; // reserved for future multi-user support
 
@@ -41,9 +51,7 @@ interface UseGameProgressState {
 }
 
 const parseProfileResponse = (data: GameProfileResponse) => {
-  const points = data.profile.points ?? 0;
-  const questionsAttempted = data.profile.questionsAttempted ?? 0;
-  const questionsCorrect = data.profile.questionsCorrect ?? 0;
+  // Use global profile stats for combo tracking
   const combo = data.profile.currentCombo ?? 0;
   const bestCombo = data.profile.bestCombo ?? 0;
   const streak = data.profile.streak ?? 0;
@@ -58,6 +66,25 @@ const parseProfileResponse = (data: GameProfileResponse) => {
     }
   });
 
+  // Calculate per-vocab-set stats by summing mode progress
+  let questionsAttempted = 0;
+  let questionsCorrect = 0;
+  let estimatedPoints = 0;
+  
+  data.modeProgress.forEach((record) => {
+    const mode = record.mode as GameMode;
+    const attempted = record.attempted ?? 0;
+    const correct = record.correct ?? 0;
+    
+    questionsAttempted += attempted;
+    questionsCorrect += correct;
+    
+    // Estimate points based on mode point values
+    if (GAME_MODES.includes(mode)) {
+      estimatedPoints += correct * MODE_POINTS[mode];
+    }
+  });
+
   const completedModes = new Set<GameMode>();
   GAME_MODES.forEach((mode) => {
     if (modeStats[mode].correct >= COMPLETION_THRESHOLD) {
@@ -66,7 +93,7 @@ const parseProfileResponse = (data: GameProfileResponse) => {
   });
 
   return {
-    points,
+    points: estimatedPoints,
     questionsAttempted,
     questionsCorrect,
     combo,

@@ -1,0 +1,75 @@
+{
+  "$id": "https://example.com/vocab-word.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vocabulary Words",
+  "description": "A schema for a collection of vocabulary words, each with a definition, teacher-friendly definition, pronunciation, part of speech, and exactly five example sentences with corresponding image descriptions for educational use.",
+  "type": "object",
+  "properties": {
+    "WORDS": {
+      "type": "array",
+      "description": "An array of vocabulary word objects.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "WORD": {
+            "type": "string",
+            "description": "The vocabulary word."
+          },
+          "DEFINITION": {
+            "type": "string",
+            "description": "The formal definition of the word."
+          },
+          "TEACHER_DEFINITION": {
+            "type": "string",
+            "description": "Cleaned up definition from prompt."
+          },
+          "PRONUNCIATION": {
+            "type": "string",
+            "description": "The phonetic pronunciation of the word."
+          },
+          "PART_OF_SPEECH": {
+            "type": "string",
+            "description": "The part of speech of the word (e.g., noun, verb, adjective)."
+          },
+          "EXAMPLES": {
+            "type": "array",
+            "description": "Exactly five example sentences demonstrating the word's usage, each with an image description for classroom visualization.",
+            "minItems": 5,
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "properties": {
+                "sentence": {
+                  "type": "string",
+                  "description": "An example sentence using the vocabulary word."
+                },
+                "image_description": {
+                  "type": "string",
+                  "description": "A detailed description of an image that visually represents the example sentence."
+                }
+              },
+              "required": [
+                "sentence",
+                "image_description"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "WORD",
+          "DEFINITION",
+          "TEACHER_DEFINITION",
+          "PRONUNCIATION",
+          "PART_OF_SPEECH",
+          "EXAMPLES"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "WORDS"
+  ],
+  "additionalProperties": false
+}
