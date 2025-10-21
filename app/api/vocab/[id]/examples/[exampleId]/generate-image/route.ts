@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
+import { unlink } from 'node:fs/promises';
+import path from 'node:path';
 import { prisma } from '@/lib/prisma';
 import { generateExampleImage } from '@/lib/geminiCreateImage';
+
+// Use custom storage dir from environment variable
+const VOCAB_IMAGES_DIR = path.resolve(process.env.VOCAB_IMAGES_DIR!);
 
 export async function POST(
   request: Request,
@@ -12,7 +17,11 @@ export async function POST(
     const example = await prisma.vocabExample.findUnique({
       where: { id: exampleId },
       include: {
-        word: true,
+        word: {
+          include: {
+            vocabSet: true,
+          },
+        },
       },
     });
 
@@ -24,6 +33,10 @@ export async function POST(
       return NextResponse.json({ error: 'Example does not belong to the specified set' }, { status: 403 });
     }
 
+    if (!example.word.vocabSet) {
+      return NextResponse.json({ error: 'Vocab set not found' }, { status: 404 });
+    }
+
     if (!example.imageDescription) {
       return NextResponse.json(
         { error: 'Image description is required to generate an illustration for this example.' },
@@ -31,8 +44,24 @@ export async function POST(
       );
     }
 
+    // Delete old image file if it exists
+    if (example.imageUrl) {
+      const urlPath = example.imageUrl.replace(/^\/api\/images\/vocab-sets\//, '').replace(/^\/vocab-sets\//, '');
+      const oldImagePath = path.join(VOCAB_IMAGES_DIR, urlPath);
+      
+      try {
+        await unlink(oldImagePath);
+      } catch (err) {
+        // File might not exist, that's okay
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+          console.warn(`Failed to delete old image ${oldImagePath}:`, err);
+        }
+      }
+    }
+
     const generated = await generateExampleImage({
       vocabSetId,
+      vocabSetName: example.word.vocabSet.name,
       exampleId,
       word: example.word.word,
       imageDescription: example.imageDescription,

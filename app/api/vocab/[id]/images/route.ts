@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import path from 'node:path';
-import { unlink } from 'node:fs/promises';
+import { unlink, readdir, rm } from 'node:fs/promises';
 import { prisma } from '@/lib/prisma';
 
 // Use custom storage dir from environment variable
 const VOCAB_IMAGES_DIR = path.resolve(process.env.VOCAB_IMAGES_DIR!);
+
+function sanitizeForFileName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'image';
+}
 
 export async function DELETE(
   request: Request,
@@ -12,6 +20,16 @@ export async function DELETE(
 ) {
   try {
     const { id: vocabSetId } = await params;
+
+    // Get the vocab set to find its name
+    const vocabSet = await prisma.vocabSet.findUnique({
+      where: { id: vocabSetId },
+      select: { name: true },
+    });
+
+    if (!vocabSet) {
+      return NextResponse.json({ error: 'Vocab set not found' }, { status: 404 });
+    }
 
     const examples = await prisma.vocabExample.findMany({
       where: {
@@ -28,32 +46,48 @@ export async function DELETE(
       },
     });
 
-    if (examples.length === 0) {
-      return NextResponse.json({ success: true, cleared: 0 });
+    // Delete all physical files in the set's directory (using sanitized set name)
+    const safeSetName = sanitizeForFileName(vocabSet.name);
+    const setImageDir = path.join(VOCAB_IMAGES_DIR, safeSetName);
+    let filesDeleted = 0;
+
+    try {
+      // Check if directory exists and delete all files in it
+      const files = await readdir(setImageDir);
+      await Promise.all(
+        files.map(async (file) => {
+          const filePath = path.join(setImageDir, file);
+          try {
+            await unlink(filePath);
+            filesDeleted++;
+          } catch (err) {
+            console.warn(`Failed to delete file ${filePath}:`, err);
+          }
+        })
+      );
+
+      // Try to remove the directory itself (will succeed if empty)
+      try {
+        await rm(setImageDir, { recursive: true });
+      } catch (err) {
+        // Directory might not be empty or already deleted, that's okay
+        console.warn(`Could not remove directory ${setImageDir}:`, err);
+      }
+    } catch (dirError) {
+      // Directory might not exist, that's okay
+      if ((dirError as NodeJS.ErrnoException).code !== 'ENOENT') {
+        console.warn(`Error accessing directory ${setImageDir}:`, dirError);
+      }
     }
 
-    await Promise.all(
-      examples.map(async (example) => {
-        if (!example.imageUrl) return;
-
-        // Extract filename from URL (handles both /vocab-sets/... and /api/images/vocab-sets/...)
-        const urlPath = example.imageUrl.replace(/^\/api\/images\/vocab-sets\//, '').replace(/^\/vocab-sets\//, '');
-        const absolutePath = path.join(VOCAB_IMAGES_DIR, urlPath);
-
-        try {
-          await unlink(absolutePath);
-        } catch (fileError) {
-          if ((fileError as NodeJS.ErrnoException).code !== 'ENOENT') {
-            throw fileError;
-          }
-        }
-      })
-    );
-
-    await prisma.vocabExample.updateMany({
+    // Clear imageUrl from database for all examples in this set
+    const updateResult = await prisma.vocabExample.updateMany({
       where: {
-        id: {
-          in: examples.map((example) => example.id),
+        word: {
+          vocabSetId,
+        },
+        imageUrl: {
+          not: null,
         },
       },
       data: {
@@ -63,7 +97,8 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      cleared: examples.length,
+      cleared: updateResult.count,
+      filesDeleted,
     });
   } catch (error) {
     console.error('Error resetting vocab set images:', error);

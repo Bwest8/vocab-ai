@@ -1,11 +1,11 @@
 import { GoogleGenAI, Modality } from '@google/genai';
 import mime from 'mime';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
+import { mkdir, writeFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 export interface GenerateExampleImageParams {
   vocabSetId: string;
+  vocabSetName: string;
   exampleId: string;
   word: string;
   imageDescription: string;
@@ -45,6 +45,7 @@ function sanitizeForFileName(value: string): string {
 
 export async function generateExampleImage({
   vocabSetId,
+  vocabSetName,
   exampleId,
   word,
   imageDescription,
@@ -87,13 +88,29 @@ export async function generateExampleImage({
   const persistImage = async (buffer: Buffer, mimeType: string | undefined) => {
     const resolvedMimeType = mimeType ?? 'image/png';
     const extension = mime.getExtension(resolvedMimeType) ?? 'png';
-    const setFolder = path.join(GEMINI_IMAGE_BASE_PATH, vocabSetId);
+    const safeSetName = sanitizeForFileName(vocabSetName);
+    const setFolder = path.join(GEMINI_IMAGE_BASE_PATH, safeSetName);
     await mkdir(setFolder, { recursive: true });
+    
+    // Find next available image number for this word
     const safeWord = sanitizeForFileName(word);
-    const fileName = `${safeWord}-${exampleId}-${randomUUID()}.${extension}`;
+    const existingFiles = await readdir(setFolder).catch(() => []);
+    const wordImagePattern = new RegExp(`^${safeWord}-image(\\d+)\\.${extension}$`);
+    let maxNumber = 0;
+    
+    for (const file of existingFiles) {
+      const match = file.match(wordImagePattern);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNumber) maxNumber = num;
+      }
+    }
+    
+    const nextNumber = maxNumber + 1;
+    const fileName = `${safeWord}-image${nextNumber}.${extension}`;
     const absolutePath = path.join(setFolder, fileName);
     await writeFile(absolutePath, buffer);
-    const publicUrl = `/api/images/vocab-sets/${vocabSetId}/${fileName}`;
+    const publicUrl = `/api/images/vocab-sets/${safeSetName}/${fileName}`;
     return { publicUrl, absolutePath, fileName, mimeType: resolvedMimeType };
   };
 
