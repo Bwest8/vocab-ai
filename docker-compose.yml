@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: vocab_ai_postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pg18_data:/var/lib/postgresql/data
+    ports:
+      - "54322:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nextjs:
+    build: .
+    container_name: vocab_ai_nextjs
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      XAI_API_KEY: ${XAI_API_KEY}
+      GROK_MODEL_ID: ${GROK_MODEL_ID}
+      GEMINI_TEXT_MODEL_ID: ${GEMINI_TEXT_MODEL_ID}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      VOCAB_IMAGES_DIR: ${VOCAB_IMAGES_DIR}
+      TTS_CACHE_DIR: ${TTS_CACHE_DIR}
+    volumes:
+      - ${TTS_CACHE_DIR}:/app/storage/audio/tts
+      - ${VOCAB_IMAGES_DIR}:/app/storage/vocab-sets
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "npx prisma migrate deploy && npm run start"
+
+volumes:
+  pg18_data:
+    driver: local
