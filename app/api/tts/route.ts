@@ -1,18 +1,16 @@
-import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
-import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-import crypto from 'crypto';
+import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
+import { NextRequest, NextResponse } from "next/server";
+import { promises as fs } from "fs";
+import path from "path";
+import crypto from "crypto";
 
-// Use environment variable for cache directory
-const CACHE_DIR = path.resolve(process.env.TTS_CACHE_DIR!);
+const CACHE_DIR_ENV = process.env.TTS_CACHE_DIR;
 
-// Ensure cache directory exists
-async function ensureCacheDir() {
+async function ensureCacheDir(dir: string) {
   try {
-    await fs.access(CACHE_DIR);
+    await fs.access(dir);
   } catch {
-    await fs.mkdir(CACHE_DIR, { recursive: true });
+    await fs.mkdir(dir, { recursive: true });
   }
 }
 
@@ -33,16 +31,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Text parameter is required' }, { status: 400 });
     }
 
-    await ensureCacheDir();
+    if (!CACHE_DIR_ENV) {
+      console.error("TTS cache directory is not configured");
+      return NextResponse.json({ error: "TTS cache directory is not configured" }, { status: 500 });
+    }
+
+    const cacheDir = path.resolve(CACHE_DIR_ENV);
+
+    await ensureCacheDir(cacheDir);
 
     // Generate cache key and filename
     const cacheKey = generateCacheKey(text, voiceId);
     const filename = `${cacheKey}.mp3`;
-    const filePath = path.join(CACHE_DIR, filename);
+  const filePath = path.join(cacheDir, filename);
 
     // Check if file exists in cache
     try {
-      await fs.access(filePath);
+    await fs.access(filePath);
       
       // Return URL reference to API route
       const audioUrl = `/api/audio/tts/${filename}`;
@@ -76,7 +81,7 @@ export async function GET(request: NextRequest) {
     const buffer = Buffer.concat(chunks);
 
     // Save to cache
-    await fs.writeFile(filePath, buffer);
+  await fs.writeFile(filePath, buffer);
 
     // Return URL reference to API route
     const audioUrl = `/api/audio/tts/${filename}`;

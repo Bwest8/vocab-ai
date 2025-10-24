@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server';
-import { unlink } from 'node:fs/promises';
-import path from 'node:path';
-import { prisma } from '@/lib/prisma';
-import { generateExampleImage } from '@/lib/geminiCreateImage';
+import { NextResponse } from "next/server";
+import { unlink } from "node:fs/promises";
+import path from "node:path";
+import { prisma } from "@/lib/prisma";
+import { generateExampleImage } from "@/lib/geminiCreateImage";
 
-// Use custom storage dir from environment variable
-const VOCAB_IMAGES_DIR = path.resolve(process.env.VOCAB_IMAGES_DIR!);
+const VOCAB_IMAGES_DIR_ENV = process.env.VOCAB_IMAGES_DIR;
 
 export async function POST(
   request: Request,
@@ -46,8 +45,14 @@ export async function POST(
 
     // Delete old image file if it exists
     if (example.imageUrl) {
+      if (!VOCAB_IMAGES_DIR_ENV) {
+        console.error("Vocab images directory is not configured");
+        return NextResponse.json({ error: "Images directory is not configured" }, { status: 500 });
+      }
+
+      const resolvedBaseDir = path.resolve(VOCAB_IMAGES_DIR_ENV);
       const urlPath = example.imageUrl.replace(/^\/api\/images\/vocab-sets\//, '').replace(/^\/vocab-sets\//, '');
-      const oldImagePath = path.join(VOCAB_IMAGES_DIR, urlPath);
+      const oldImagePath = path.join(resolvedBaseDir, urlPath);
       
       try {
         await unlink(oldImagePath);

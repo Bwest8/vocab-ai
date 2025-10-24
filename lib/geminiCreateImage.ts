@@ -1,7 +1,7 @@
-import { GoogleGenAI, Modality } from '@google/genai';
-import mime from 'mime';
-import { mkdir, writeFile, readdir } from 'node:fs/promises';
-import path from 'node:path';
+import { GoogleGenAI, Modality } from "@google/genai";
+import mime from "mime";
+import { mkdir, writeFile, readdir } from "node:fs/promises";
+import path from "node:path";
 
 export interface GenerateExampleImageParams {
   vocabSetId: string;
@@ -19,8 +19,15 @@ export interface GeneratedImageResult {
   mimeType: string;
 }
 
-const GEMINI_IMAGE_MODEL_ID = 'models/gemini-2.5-flash-image';
-const GEMINI_IMAGE_BASE_PATH = path.resolve(process.env.VOCAB_IMAGES_DIR!);
+const GEMINI_IMAGE_MODEL_ID = "models/gemini-2.5-flash-image";
+
+function resolveImageBasePath(): string {
+  const baseDir = process.env.VOCAB_IMAGES_DIR;
+  if (!baseDir) {
+    throw new Error("Missing VOCAB_IMAGES_DIR environment variable.");
+  }
+  return path.resolve(baseDir);
+}
 
 let genAIClient: GoogleGenAI | null = null;
 
@@ -83,11 +90,13 @@ export async function generateExampleImage({
 
   const candidateParts = result.candidates?.[0]?.content?.parts ?? [];
 
+  const imageBasePath = resolveImageBasePath();
+
   const persistImage = async (buffer: Buffer, mimeType: string | undefined) => {
     const resolvedMimeType = mimeType ?? 'image/png';
     const extension = mime.getExtension(resolvedMimeType) ?? 'png';
     const safeSetName = sanitizeForFileName(vocabSetName);
-    const setFolder = path.join(GEMINI_IMAGE_BASE_PATH, safeSetName);
+    const setFolder = path.join(imageBasePath, safeSetName);
     await mkdir(setFolder, { recursive: true });
     
     // Find next available image number for this word

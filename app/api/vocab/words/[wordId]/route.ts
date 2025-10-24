@@ -1,10 +1,9 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import path from 'node:path';
-import { unlink } from 'node:fs/promises';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import path from "node:path";
+import { unlink } from "node:fs/promises";
 
-// Use custom storage dir from environment variable
-const VOCAB_IMAGES_DIR = path.resolve(process.env.VOCAB_IMAGES_DIR!);
+const VOCAB_IMAGES_DIR_ENV = process.env.VOCAB_IMAGES_DIR;
 
 export async function PATCH(
   request: Request,
@@ -80,6 +79,13 @@ export async function DELETE(
       },
     });
 
+    if (!VOCAB_IMAGES_DIR_ENV) {
+      console.error("Vocab images directory is not configured");
+      return NextResponse.json({ error: "Images directory is not configured" }, { status: 500 });
+    }
+
+    const resolvedBaseDir = path.resolve(VOCAB_IMAGES_DIR_ENV);
+
     // Delete image files from disk
     await Promise.all(
       examples.map(async (example: { imageUrl: string | null }) => {
@@ -89,7 +95,7 @@ export async function DELETE(
         const urlPath = example.imageUrl
           .replace(/^\/api\/images\/vocab-sets\//, '')
           .replace(/^\/vocab-sets\//, '');
-        const absolutePath = path.join(VOCAB_IMAGES_DIR, urlPath);
+        const absolutePath = path.join(resolvedBaseDir, urlPath);
 
         try {
           await unlink(absolutePath);

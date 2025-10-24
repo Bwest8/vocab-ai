@@ -1,10 +1,9 @@
-import { NextResponse } from 'next/server';
-import path from 'node:path';
-import { unlink, readdir, rm } from 'node:fs/promises';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import path from "node:path";
+import { unlink, readdir, rm } from "node:fs/promises";
+import { prisma } from "@/lib/prisma";
 
-// Use custom storage dir from environment variable
-const VOCAB_IMAGES_DIR = path.resolve(process.env.VOCAB_IMAGES_DIR!);
+const VOCAB_IMAGES_DIR_ENV = process.env.VOCAB_IMAGES_DIR;
 
 function sanitizeForFileName(value: string): string {
   return value
@@ -31,9 +30,16 @@ export async function DELETE(
       return NextResponse.json({ error: 'Vocab set not found' }, { status: 404 });
     }
 
+    if (!VOCAB_IMAGES_DIR_ENV) {
+      console.error("Vocab images directory is not configured");
+      return NextResponse.json({ error: "Images directory is not configured" }, { status: 500 });
+    }
+
+    const resolvedBaseDir = path.resolve(VOCAB_IMAGES_DIR_ENV);
+
     // Delete all physical files in the set's directory (using sanitized set name)
     const safeSetName = sanitizeForFileName(vocabSet.name);
-    const setImageDir = path.join(VOCAB_IMAGES_DIR, safeSetName);
+    const setImageDir = path.join(resolvedBaseDir, safeSetName);
     let filesDeleted = 0;
 
     try {

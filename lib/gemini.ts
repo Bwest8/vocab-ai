@@ -13,8 +13,14 @@ import type { GeminiVocabResponse } from './types';
 
 const GEMINI_TEXT_MODEL_ID = 'models/gemini-2.5-flash';
 const GEMINI_IMAGE_MODEL_ID = 'models/gemini-2.5-flash-image';
-// Use environment variable for image storage
-const GEMINI_IMAGE_BASE_PATH = path.resolve(process.env.VOCAB_IMAGES_DIR!);
+
+function resolveImageBasePath(): string {
+  const baseDir = process.env.VOCAB_IMAGES_DIR;
+  if (!baseDir) {
+    throw new Error('Missing VOCAB_IMAGES_DIR environment variable.');
+  }
+  return path.resolve(baseDir);
+}
 
 // Single client for the entire module
 let genAIClient: GoogleGenAI | null = null;
@@ -153,6 +159,7 @@ export async function generateExampleImage({
   }
 
   const client = getGenAIClient();
+  const imageBasePath = resolveImageBasePath();
 
   // The system instruction defines the consistent art style.
  const systemInstruction = `You are an expert illustrator creating engaging and educational visuals for upper elementary students (ages 10-12). Your primary goal is to create an image that clearly illustrates the meaning of a specific vocabulary word in a memorable and easy-to-understand way.
@@ -189,7 +196,7 @@ export async function generateExampleImage({
     const resolvedMimeType = mimeType ?? 'image/png';
     const extension = mime.getExtension(resolvedMimeType) ?? 'png';
 
-    const setFolder = path.join(GEMINI_IMAGE_BASE_PATH, vocabSetId);
+  const setFolder = path.join(imageBasePath, vocabSetId);
     await mkdir(setFolder, { recursive: true });
 
     const safeWord = sanitizeForFileName(word);
