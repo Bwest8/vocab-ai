@@ -82,7 +82,7 @@ export async function DELETE(
 
     // Delete image files from disk
     await Promise.all(
-      examples.map(async (example) => {
+      examples.map(async (example: { imageUrl: string | null }) => {
         if (!example.imageUrl) return;
 
         // Extract filename from URL (handles both /vocab-sets/... and /api/images/vocab-sets/...)
