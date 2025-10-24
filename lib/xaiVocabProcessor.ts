@@ -4,17 +4,25 @@ import OpenAI from "openai";
 // =============================================================================
 // 1) Client Setup
 // =============================================================================
-const XAI_API_KEY = process.env.XAI_API_KEY;
 const GROK_MODEL_ID = process.env.GROK_MODEL_ID ?? "grok-4-fast";
 
-if (!XAI_API_KEY) {
-  throw new Error("XAI_API_KEY environment variable is not set.");
-}
+let cachedClient: OpenAI | null = null;
 
-const client = new OpenAI({
-  apiKey: XAI_API_KEY,
-  baseURL: "https://api.x.ai/v1",
-});
+function getClient(): OpenAI {
+  const apiKey = process.env.XAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("XAI_API_KEY environment variable is not set.");
+  }
+
+  if (!cachedClient) {
+    cachedClient = new OpenAI({
+      apiKey,
+      baseURL: "https://api.x.ai/v1",
+    });
+  }
+
+  return cachedClient;
+}
 
 // =============================================================================
 // 2) Schema Definition (Zod)
@@ -48,6 +56,7 @@ type VocabWordResponse = z.infer<typeof VocabWordSchema>;
 export async function processVocabularyWords(
   rawText: string
 ): Promise<VocabWordResponse["WORDS"]> {
+  const client = getClient();
   const systemInstruction = [
     // Role & context
     "You are an expert instructional designer and educational content creator specializing in literacy development for students in grades 4 through 6.",
