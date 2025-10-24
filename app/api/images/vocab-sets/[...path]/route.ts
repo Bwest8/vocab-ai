@@ -1,10 +1,9 @@
-import { NextResponse } from 'next/server';
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
-import mime from 'mime';
+import { NextResponse } from "next/server";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import mime from "mime";
 
-// Use custom storage dir from environment variable
-const VOCAB_IMAGES_DIR = path.resolve(process.env.VOCAB_IMAGES_DIR!);
+const VOCAB_IMAGES_DIR = process.env.VOCAB_IMAGES_DIR;
 
 export async function GET(
   request: Request,
@@ -12,19 +11,25 @@ export async function GET(
 ) {
   try {
     const { path: pathSegments } = await params;
-    
+
     if (!pathSegments || pathSegments.length === 0) {
       return new NextResponse('Not Found', { status: 404 });
     }
 
+    if (!VOCAB_IMAGES_DIR) {
+      console.error("Vocab images directory is not configured");
+      return new NextResponse("Images directory not configured", { status: 500 });
+    }
+
     // Join the path segments to create the file path
-    const filePath = path.join(VOCAB_IMAGES_DIR, ...pathSegments);
+    const resolvedBaseDir = path.resolve(VOCAB_IMAGES_DIR);
+    const filePath = path.join(resolvedBaseDir, ...pathSegments);
 
     // Security check: Ensure the resolved path is within VOCAB_IMAGES_DIR
     const resolvedPath = path.resolve(filePath);
-    const resolvedBaseDir = path.resolve(VOCAB_IMAGES_DIR);
-    
-    if (!resolvedPath.startsWith(resolvedBaseDir)) {
+    const relativePath = path.relative(resolvedBaseDir, resolvedPath);
+
+    if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
