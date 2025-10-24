@@ -10,6 +10,7 @@ RUN npm ci
 
 # Copy source and build
 COPY . .
+RUN npx prisma generate
 RUN npm run build
 
 # ===========================
@@ -26,6 +27,7 @@ COPY --from=builder /app/prisma ./prisma
 
 # Install production dependencies only
 RUN npm ci --omit=dev
+RUN npx prisma generate
 
 ENV NODE_ENV=production
 EXPOSE 3000
