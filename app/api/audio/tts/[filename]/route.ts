@@ -1,10 +1,9 @@
-import { NextResponse } from 'next/server';
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
-import mime from 'mime';
+import { NextResponse } from "next/server";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import mime from "mime";
 
-// Use custom storage dir from environment variable
-const TTS_CACHE_DIR = path.resolve(process.env.TTS_CACHE_DIR!);
+const TTS_CACHE_DIR = process.env.TTS_CACHE_DIR;
 
 export async function GET(
   request: Request,
@@ -17,14 +16,20 @@ export async function GET(
       return new NextResponse('Invalid filename', { status: 400 });
     }
 
+    if (!TTS_CACHE_DIR) {
+      console.error("TTS cache directory is not configured");
+      return new NextResponse("TTS cache directory is not configured", { status: 500 });
+    }
+
     // Construct the file path
-    const filePath = path.join(TTS_CACHE_DIR, filename);
+    const resolvedBaseDir = path.resolve(TTS_CACHE_DIR);
+    const filePath = path.join(resolvedBaseDir, filename);
 
     // Security check: Ensure the resolved path is within TTS_CACHE_DIR
     const resolvedPath = path.resolve(filePath);
-    const resolvedBaseDir = path.resolve(TTS_CACHE_DIR);
-    
-    if (!resolvedPath.startsWith(resolvedBaseDir)) {
+    const relativePath = path.relative(resolvedBaseDir, resolvedPath);
+
+    if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
