@@ -137,7 +137,7 @@ export async function processVocabularyWords(
   console.log("Raw AI response:", text);
 
   // Clean common markdown wrappers
-  let cleanedText = text
+  const cleanedText = text
     .replace(/```(?:json)?\s*/g, '')  // Remove opening ```json
     .replace(/\s*```/g, '')           // Remove closing ```
     .trim();

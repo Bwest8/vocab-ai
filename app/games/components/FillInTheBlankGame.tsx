@@ -9,7 +9,6 @@ interface BaseGameProps {
   reviewWords: WordWithRelations[];
   allWords: WordWithRelations[];
   onResult: (result: GameResult) => void;
-  gameKey: number;
 }
 
 const shuffle = <T,>(array: T[]) => {
@@ -47,8 +46,8 @@ const createSentenceWithBlank = (word: WordWithRelations) => {
   return `_____ (${word.partOfSpeech ?? "word"}) ${(word.teacherDefinition || word.definition).toLowerCase()}.`;
 };
 
-export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
-  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords, gameKey]);
+export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
+  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords]);
   const optionPool = useMemo(() => getOptionPool(shuffledWords, reviewWords, allWords), [shuffledWords, reviewWords, allWords]);
   const questions = useMemo(() => {
     return shuffledWords.map((word) => {

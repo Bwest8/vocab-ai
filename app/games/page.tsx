@@ -8,15 +8,6 @@ import { GameModeSelector } from "@/app/components/GameModeSelector";
 import { useGamesSession } from "@/lib/hooks/useGamesSession";
 import { useGameProgress } from "@/lib/hooks/useGameProgress";
 
-const schedule: Array<{ day: string; focus: string; mode: GameMode; description: string }> = [
-  { day: "Day 1", focus: "Definition Match", mode: "definition-match", description: "Preview new words and match meanings." },
-  { day: "Day 2", focus: "Definition Match", mode: "definition-match", description: "Build confidence with repeat play." },
-  { day: "Day 3", focus: "Reverse Mode", mode: "reverse-definition", description: "See the words first and recall definitions." },
-  { day: "Day 4", focus: "Fill-in-the-Blank", mode: "fill-in-the-blank", description: "Use context clues in real sentences." },
-  { day: "Day 5", focus: "Speed Round", mode: "speed-round", description: "Timed challenge for rapid recall." },
-  { day: "Day 6", focus: "Matching Game", mode: "matching", description: "Match words with their definitions." },
-];
-
 export default function GamesPage() {
   const router = useRouter();
   const {

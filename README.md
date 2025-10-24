@@ -53,14 +53,13 @@ GEMINI_TEXT_MODEL_ID=gemini-2.5-flash                    # optional override
 ELEVENLABS_API_KEY=your_elevenlabs_key
 
 # Custom storage (absolute paths)
-VOCAB_IMAGES_DIR=/absolute/path/to/storage/vocab-sets
-TTS_CACHE_DIR=/absolute/path/to/storage/audio/tts
+VOCAB_IMAGES_DIR=/DATA/AppData/vocab-ai/vocab-sets
+TTS_CACHE_DIR=/DATA/AppData/vocab-ai/tts
 ```
 
 ### 3) Ensure local Supabase is running
 
-- Supabase Studio (UI): http://localhost:54323/
-- Postgres host/port: localhost:54322
+- Postgres host/port: localhost:5432
 - Verify your `DATABASE_URL` points to the local Supabase Postgres instance (see above)
 
 ### 4) Run database migrations
@@ -92,6 +91,10 @@ Open http://localhost:3000
 
 ## Docker Compose (optional)
 
+```bash
+git clone https://github.com/Bwest8/vocab-ai.git
+```
+
 You can run Postgres (and the app) with Docker Compose using variables from `.env`.
 
 1) Copy `.env.example` to `.env` and edit values (absolute paths for storage are recommended):
@@ -100,7 +103,15 @@ You can run Postgres (and the app) with Docker Compose using variables from `.en
 cp .env.example .env
 ```
 
-2) Start the stack:
+2) Create the host directories referenced in `.env` (only needs to be done once):
+
+```bash
+mkdir -p /DATA/AppData/postgresql \
+         /DATA/AppData/vocab-ai/vocab-sets \
+         /DATA/AppData/vocab-ai/tts
+```
+
+3) Start the stack:
 
 ```bash
 docker compose up -d

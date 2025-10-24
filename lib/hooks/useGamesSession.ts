@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { toMasteryLevel } from "@/lib/study/utils";
 import type { FetchState, VocabSetSummary, WordWithRelations } from "@/lib/study/types";
 import type { MasteryLevel } from "@/lib/types";
-import type { GameMode } from "@/lib/types";
 
 const WEEKLY_WORD_LIMIT = 12;
 

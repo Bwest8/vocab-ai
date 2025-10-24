@@ -3,25 +3,25 @@
 import { useMemo, useState } from "react";
 import type { WordWithRelations } from "@/lib/study/types";
 import type { GameResult } from "@/lib/hooks/useGameProgress";
-import { DefinitionMatchGame } from "./DefinitionMatchGame";
 
 interface BaseGameProps {
   weeklyWords: WordWithRelations[];
   reviewWords: WordWithRelations[];
   allWords: WordWithRelations[];
   onResult: (result: GameResult) => void;
-  gameKey: number;
 }
 
-export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
-  const shuffledWords = useMemo(() => {
-    const copy = [...weeklyWords];
-    for (let i = copy.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
-  }, [weeklyWords, gameKey]);
+const shuffle = <T,>(array: T[]) => {
+  const copy = [...array];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+};
+
+export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
+  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords]);
 
   const optionPool = useMemo(() => {
     const combined = [...shuffledWords];
@@ -42,24 +42,14 @@ export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onRe
     const safePool = optionPool.length > 0 ? optionPool : shuffledWords;
 
     return shuffledWords.map((word) => {
-      const otherOptions = (() => {
-        const shuffled = [...safePool.filter((candidate) => candidate.id !== word.id)];
-        for (let i = shuffled.length - 1; i > 0; i -= 1) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled.slice(0, 3).map((candidate) => (candidate.teacherDefinition || candidate.definition));
-      })();
+      const otherOptions = shuffle(
+        safePool.filter((candidate) => candidate.id !== word.id)
+      )
+        .slice(0, 3)
+        .map((candidate) => (candidate.teacherDefinition || candidate.definition));
 
       const correctOption = word.teacherDefinition || word.definition;
-      const options = (() => {
-        const opts = [correctOption, ...otherOptions];
-        for (let i = opts.length - 1; i > 0; i -= 1) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [opts[i], opts[j]] = [opts[j], opts[i]];
-        }
-        return opts;
-      })();
+      const options = shuffle([correctOption, ...otherOptions]);
 
       return {
         id: word.id,

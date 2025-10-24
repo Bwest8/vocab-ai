@@ -9,7 +9,6 @@ interface BaseGameProps {
   reviewWords: WordWithRelations[];
   allWords: WordWithRelations[];
   onResult: (result: GameResult) => void;
-  gameKey: number;
 }
 
 const shuffle = <T,>(array: T[]) => {
@@ -36,8 +35,8 @@ const getOptionPool = (weekly: WordWithRelations[], review: WordWithRelations[],
   return combined;
 };
 
-export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
-  const questionPool = useMemo(() => shuffle(getOptionPool(weeklyWords, reviewWords, allWords)), [weeklyWords, reviewWords, allWords, gameKey]);
+export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
+  const questionPool = useMemo(() => shuffle(getOptionPool(weeklyWords, reviewWords, allWords)), [weeklyWords, reviewWords, allWords]);
   const [isActive, setIsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [index, setIndex] = useState(0);

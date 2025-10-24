@@ -3,13 +3,27 @@
 import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 
+interface VocabSetSummary {
+  id: string;
+  name: string;
+}
+
+interface CreateVocabResult {
+  processedWords: number;
+  vocabSet?: {
+    name: string;
+    words?: Array<{ id: string }>;
+  };
+  error?: string;
+}
+
 export default function CreateVocabPage() {
   const [vocabSetName, setVocabSetName] = useState('');
   const [grade, setGrade] = useState('04');
   const [description, setDescription] = useState('');
   const [rawText, setRawText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<CreateVocabResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -17,9 +31,9 @@ export default function CreateVocabPage() {
       try {
         const response = await fetch('/api/vocab');
         if (!response.ok) throw new Error('Failed to fetch vocab sets');
-        const sets = await response.json();
+        const sets: VocabSetSummary[] = await response.json();
         const lessonNumbers = sets
-          .map((set: any) => set.name)
+          .map((set) => set.name)
           .filter((name: string) => name.startsWith('Lesson '))
           .map((name: string) => parseInt(name.replace('Lesson ', '')))
           .filter((num: number) => !isNaN(num));

@@ -8,7 +8,6 @@ interface GameDashboardProps {
   points: number;
   stars: number;
   accuracy: number;
-  combo: number;
   bestCombo: number;
   streak: number;
   weeklyMastery: WeeklyMasterySummary;
@@ -35,7 +34,6 @@ export function GameDashboard({
   points,
   stars,
   accuracy,
-  combo,
   bestCombo,
   streak,
   weeklyMastery,

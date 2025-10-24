@@ -189,7 +189,7 @@ export function useStudySession(): UseStudySessionResult {
     setImageGenerationNotice(null);
     setGeneratingExampleIds(new Set());
     setGenerationQueue([]);
-  }, [currentWord?.id]);
+  }, [currentWord]);
 
   useEffect(() => {
     if (!showImageModal) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { WordWithRelations } from "@/lib/study/types";
 import type { GameResult } from "@/lib/hooks/useGameProgress";
 
@@ -9,7 +9,6 @@ interface BaseGameProps {
   reviewWords: WordWithRelations[];
   allWords: WordWithRelations[];
   onResult: (result: GameResult) => void;
-  gameKey: number;
 }
 
 interface GameCard {
@@ -29,17 +28,11 @@ const shuffle = <T,>(array: T[]) => {
   return copy;
 };
 
-export function MatchingGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
+export function MatchingGame({ weeklyWords, reviewWords: _reviewWords, allWords, onResult }: BaseGameProps) {
+  void _reviewWords;
   const gameWords = weeklyWords.length > 0 ? weeklyWords : allWords.slice(0, 12); // Use weekly words or first 12 from all words
 
-  const [cards, setCards] = useState<GameCard[]>([]);
-  const [selectedCards, setSelectedCards] = useState<string[]>([]);
-  const [matches, setMatches] = useState(0);
-  const [attempts, setAttempts] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
-
-  // Initialize a new shuffled set of cards for a round
-  const initializeGame = () => {
+  const buildCards = () => {
     const gameCards: GameCard[] = [];
 
     gameWords.forEach((word, index) => {
@@ -59,18 +52,22 @@ export function MatchingGame({ weeklyWords, reviewWords, allWords, onResult, gam
       });
     });
 
-    setCards(shuffle(gameCards));
+    return shuffle(gameCards);
+  };
+
+  const [cards, setCards] = useState<GameCard[]>(() => buildCards());
+  const [selectedCards, setSelectedCards] = useState<string[]>([]);
+  const [matches, setMatches] = useState(0);
+  const [attempts, setAttempts] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+
+  const initializeGame = () => {
+    setCards(buildCards());
     setSelectedCards([]);
     setMatches(0);
     setAttempts(0);
     setIsComplete(false);
   };
-
-  useEffect(() => {
-    if (gameWords.length > 0) {
-      initializeGame();
-    }
-  }, [gameWords, gameKey]);
 
   const handleCardClick = (cardId: string) => {
     if (selectedCards.includes(cardId)) return;

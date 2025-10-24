@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { GameMode } from "@/lib/types";
 import { DefinitionMatchGame, FillInTheBlankGame, ReverseDefinitionGame, SpeedRoundGame, MatchingGame, WordScrambleGame } from "@/app/games/components";
@@ -24,16 +24,9 @@ export default function GameModePage() {
     reviewWords,
     words,
     errorMessage,
-    setState,
-    wordsState,
   } = useGamesSession();
 
   const progress = useGameProgress(selectedSetId || null);
-  const [gameKey, setGameKey] = useState(0);
-
-  useEffect(() => {
-    setGameKey(Math.random());
-  }, [mode]);
 
   useEffect(() => {
     if (!isValidMode) {
@@ -41,34 +34,36 @@ export default function GameModePage() {
     }
   }, [isValidMode, router]);
 
-  const isLoading = setState === "loading" || wordsState === "loading";
-
   const modeComponent = useMemo(() => {
+    const weeklyKey = weeklyWords.map((word) => word.id).join("-") || "none";
+    const reviewKey = reviewWords.map((word) => word.id).join("-") || "none";
+    const allKey = words.map((word) => word.id).join("-") || "none";
+    const componentKey = [mode, selectedSetId ?? "none", weeklyKey, reviewKey, allKey].join(":");
+
     const commonProps = {
       weeklyWords,
       reviewWords,
       allWords: words,
       onResult: progress.registerResult,
-      gameKey,
     } as const;
 
     switch (mode) {
       case "definition-match":
-        return <DefinitionMatchGame {...commonProps} />;
+        return <DefinitionMatchGame key={componentKey} {...commonProps} />;
       case "reverse-definition":
-        return <ReverseDefinitionGame {...commonProps} />;
+        return <ReverseDefinitionGame key={componentKey} {...commonProps} />;
       case "fill-in-the-blank":
-        return <FillInTheBlankGame {...commonProps} />;
+        return <FillInTheBlankGame key={componentKey} {...commonProps} />;
       case "speed-round":
-        return <SpeedRoundGame {...commonProps} />;
+        return <SpeedRoundGame key={componentKey} {...commonProps} />;
       case "matching":
-        return <MatchingGame {...commonProps} />;
+        return <MatchingGame key={componentKey} {...commonProps} />;
       case "word-scramble":
-        return <WordScrambleGame {...commonProps} />;
+        return <WordScrambleGame key={componentKey} {...commonProps} />;
       default:
-        return <MatchingGame {...commonProps} />;
+        return <MatchingGame key={`${componentKey}-fallback`} {...commonProps} />;
     }
-  }, [mode, weeklyWords, reviewWords, words, progress.registerResult, gameKey]);
+  }, [mode, selectedSetId, weeklyWords, reviewWords, words, progress.registerResult]);
 
   const titleMap: Record<GameMode, string> = {
     "definition-match": "Definition Match",

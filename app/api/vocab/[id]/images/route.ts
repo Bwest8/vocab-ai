@@ -31,21 +31,6 @@ export async function DELETE(
       return NextResponse.json({ error: 'Vocab set not found' }, { status: 404 });
     }
 
-    const examples = await prisma.vocabExample.findMany({
-      where: {
-        word: {
-          vocabSetId,
-        },
-        imageUrl: {
-          not: null,
-        },
-      },
-      select: {
-        id: true,
-        imageUrl: true,
-      },
-    });
-
     // Delete all physical files in the set's directory (using sanitized set name)
     const safeSetName = sanitizeForFileName(vocabSet.name);
     const setImageDir = path.join(VOCAB_IMAGES_DIR, safeSetName);

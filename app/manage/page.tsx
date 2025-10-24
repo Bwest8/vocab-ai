@@ -8,7 +8,6 @@ import {
   ChevronDown,
   Filter,
   GraduationCap,
-  ImageOff,
   LibrarySquare,
   ListChecks,
   Loader2,
@@ -46,9 +45,7 @@ export default function ManagePage() {
   const [selectedWord, setSelectedWord] = useState<EditableWord | null>(null);
   const [allWords, setAllWords] = useState<ManagedWord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [wordsRefreshing, setWordsRefreshing] = useState(false);
   const [editMode, setEditMode] = useState<'set' | 'word' | null>(null);
-  const [editSource, setEditSource] = useState<'set' | 'library' | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ type: 'set' | 'word'; id: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'sets' | 'words'>('sets');
   const [wordSearch, setWordSearch] = useState('');
@@ -143,8 +140,6 @@ export default function ManagePage() {
     } catch (error) {
       console.error('Error fetching vocab words:', error);
       return [];
-    } finally {
-      setWordsRefreshing(false);
     }
   };
 
@@ -210,7 +205,7 @@ export default function ManagePage() {
     }
   };
 
-  const handleEditWord = (word: EditableWord, source: 'set' | 'library') => {
+  const handleEditWord = (word: EditableWord) => {
     setSelectedWord(word);
     setWordForm({
       word: word.word,
@@ -220,13 +215,11 @@ export default function ManagePage() {
       partOfSpeech: word.partOfSpeech || '',
     });
     setEditMode('word');
-    setEditSource(source);
   };
 
   const cancelWordEdit = () => {
     setSelectedWord(null);
     setEditMode(null);
-    setEditSource(null);
   };
 
   const toggleExamples = (wordId: string) => {
@@ -285,7 +278,8 @@ export default function ManagePage() {
 
       setExpandedExamples((prev) => {
         if (!prev[wordId]) return prev;
-        const { [wordId]: _, ...rest } = prev;
+        const rest = { ...prev };
+        delete rest[wordId];
         return rest;
       });
     } catch (error) {
@@ -688,7 +682,7 @@ export default function ManagePage() {
 
                                     <div className="flex flex-wrap gap-2 md:justify-end">
                                       <button
-                                        onClick={() => handleEditWord(word, 'set')}
+                                        onClick={() => handleEditWord(word)}
                                         className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-indigo-700 hover:shadow-lg"
                                       >
                                         <PencilLine className="h-4 w-4" />
@@ -949,7 +943,7 @@ export default function ManagePage() {
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button
                         type="button"
-                        onClick={() => handleEditWord({ ...word, vocabSet: word.vocabSet }, 'library')}
+                        onClick={() => handleEditWord({ ...word, vocabSet: word.vocabSet })}
                         className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-indigo-700 hover:shadow-lg"
                       >
                         <PencilLine className="h-4 w-4" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import type { WordWithRelations } from "@/lib/study/types";
 import type { GameResult } from "@/lib/hooks/useGameProgress";
 import type { GameMode } from "@/lib/types";
@@ -10,7 +10,6 @@ interface BaseGameProps {
   reviewWords: WordWithRelations[];
   allWords: WordWithRelations[];
   onResult: (result: GameResult) => void;
-  gameKey: number;
 }
 
 const MODE: GameMode = "word-scramble";
@@ -25,55 +24,62 @@ const shuffle = <T,>(array: T[]) => {
   return copy;
 };
 
-export function WordScrambleGame({ weeklyWords, allWords, onResult, gameKey }: BaseGameProps) {
-  // Shuffle words once per game session
-  const [words, setWords] = useState<WordWithRelations[]>([]);
-  useEffect(() => {
+const generateScramble = (word: string): string => {
+  if (!word) return "";
+  const letters = word.split("");
+  let scrambledWord = word;
+
+  for (let attempts = 0; attempts < 5 && scrambledWord === word && letters.length > 1; attempts += 1) {
+    scrambledWord = shuffle(letters).join("");
+  }
+
+  return scrambledWord;
+};
+
+export function WordScrambleGame({ weeklyWords, allWords, onResult }: BaseGameProps) {
+  const [words, setWords] = useState<WordWithRelations[]>(() => {
     const pool = weeklyWords.length > 0 ? weeklyWords : allWords.slice(0, 10);
-    setWords(shuffle(pool));
-  }, [weeklyWords, allWords, gameKey]);
+    return shuffle(pool);
+  });
 
   const [index, setIndex] = useState(0);
-  const [scrambled, setScrambled] = useState<string>("");
+  const initialWord = words[0];
+  const [scrambled, setScrambled] = useState<string>(() => generateScramble(initialWord?.word ?? ""));
   const [answer, setAnswer] = useState<string>("");
   // Track which scrambled letters have been used (by index)
   const [usedIndices, setUsedIndices] = useState<number[]>([]);
   const [hintStep, setHintStep] = useState(0); // 0 none, 1 masked def, 2 masked example
   const [revealFirst, setRevealFirst] = useState(false);
   const [revealLast, setRevealLast] = useState(false);
-  const [reshuffles, setReshuffles] = useState(0);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [animatingIdx, setAnimatingIdx] = useState<number | null>(null);
 
   const current = words[index];
 
-  useEffect(() => {
-    if (!current) return;
-    const letters = current.word.split("");
-    let scrambledWord = current.word;
-    // Ensure scrambled differs from original if possible
-    for (let attempts = 0; attempts < 5 && scrambledWord === current.word && letters.length > 1; attempts += 1) {
-      scrambledWord = shuffle(letters).join("");
+  const prepareWord = (word: WordWithRelations | undefined) => {
+    if (!word) {
+      setScrambled("");
+      setAnswer("");
+      setUsedIndices([]);
+      setHintStep(0);
+      setRevealFirst(false);
+      setRevealLast(false);
+      setIsCorrect(null);
+      setAnimatingIdx(null);
+      return;
     }
-    setScrambled(scrambledWord);
+
+    setScrambled(generateScramble(word.word));
     setAnswer("");
     setUsedIndices([]);
     setHintStep(0);
     setRevealFirst(false);
     setRevealLast(false);
-    setReshuffles(0);
     setIsCorrect(null);
-  }, [index, current]);
-
-
-  const maskedExample = useMemo(() => {
-    if (!current?.examples?.[0]?.sentence) return "";
-    const sentence = current.examples[0].sentence;
-    const word = current.word;
-    const reWord = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-    return sentence.replace(reWord, "_".repeat(word.length));
-  }, [current]);
+    setAnimatingIdx(null);
+  };
 
   const pattern = useMemo(() => {
     if (!current) return "";
@@ -99,15 +105,16 @@ export function WordScrambleGame({ weeklyWords, allWords, onResult, gameKey }: B
     if (correct) {
       setScore((s) => s + 1);
       setTimeout(() => {
-        if (index < words.length - 1) setIndex((i) => i + 1);
-        else setIsComplete(true);
+        if (index < words.length - 1) {
+          const nextIndex = index + 1;
+          setIndex(nextIndex);
+          prepareWord(words[nextIndex]);
+        } else {
+          setIsComplete(true);
+        }
       }, 900);
     }
   };
-
-  // Animation state for selected letter
-  const [animatingIdx, setAnimatingIdx] = useState<number | null>(null);
-
   // Handle clicking a letter box to add to answer
   function handleLetterClick(idx: number) {
     if (usedIndices.includes(idx) || isCorrect === true) return;
@@ -126,24 +133,23 @@ export function WordScrambleGame({ weeklyWords, allWords, onResult, gameKey }: B
   }
 
   const skip = () => {
-    if (index < words.length - 1) setIndex((i) => i + 1);
-    else setIsComplete(true);
+    if (index < words.length - 1) {
+      const nextIndex = index + 1;
+      setIndex(nextIndex);
+      prepareWord(words[nextIndex]);
+    } else {
+      setIsComplete(true);
+    }
   };
 
   const reset = () => {
+    const pool = weeklyWords.length > 0 ? weeklyWords : allWords.slice(0, 10);
+    const nextWords = shuffle(pool);
+    setWords(nextWords);
     setIndex(0);
     setScore(0);
     setIsComplete(false);
-    setHintStep(0);
-    setRevealFirst(false);
-    setRevealLast(false);
-    setReshuffles(0);
-    setIsCorrect(null);
-    setAnswer("");
-    setUsedIndices([]);
-    // Reshuffle words for a new game session
-    const pool = weeklyWords.length > 0 ? weeklyWords : allWords.slice(0, 10);
-    setWords(shuffle(pool));
+    prepareWord(nextWords[0]);
   };
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -238,7 +244,6 @@ export function WordScrambleGame({ weeklyWords, allWords, onResult, gameKey }: B
               }
               setScrambled(next);
               setUsedIndices(newUsedIndices);
-              setReshuffles((r) => r + 1);
             }}
             className="rounded-full border-2 border-indigo-300 bg-white px-4 py-2 text-base font-bold text-indigo-700 shadow hover:bg-indigo-50 hover:border-indigo-400 transition"
           >

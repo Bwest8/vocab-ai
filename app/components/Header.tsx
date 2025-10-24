@@ -12,7 +12,7 @@ interface HeaderProps {
   subtitle?: string;
   description?: string;
   showVocabSetSelector?: boolean;
-  vocabSets?: Array<{ id: string; name: string; words?: any[] }>;
+  vocabSets?: Array<{ id: string; name: string; words?: Array<{ id: string; [key: string]: unknown }> }>;
   selectedSetId?: string;
   onSelectSet?: (setId: string) => void;
   rightSlot?: React.ReactNode;
@@ -30,7 +30,6 @@ export default function Header({
   rightSlot,
   isLoading = false,
 }: HeaderProps) {
-  const selected = vocabSets.find((s) => s.id === selectedSetId) || null;
   return (
     <header className="sticky top-0 z-40 bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 text-white shadow-lg" style={{ paddingTop: "calc(env(safe-area-inset-top,0px) + 2px)" }}>
       <div className="relative mx-auto w-full max-w-7xl px-3.5 sm:px-6 lg:px-8 py-1.5 md:py-4">

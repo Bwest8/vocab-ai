@@ -123,10 +123,18 @@ export function StudyFlashcard({
   };
 
   useEffect(() => {
+    const listenerState = audioListenersRef.current;
+    const wordAudio = wordAudioRef.current;
+    const definitionAudio = definitionAudioRef.current;
+
     return () => {
-      (['word', 'definition'] as const).forEach((key) => {
-        const audioElement = audioRefs[key].current;
-        const listeners = audioListenersRef.current[key];
+      const refPairs: Array<[AudioKey, HTMLAudioElement | null]> = [
+        ['word', wordAudio],
+        ['definition', definitionAudio],
+      ];
+
+      refPairs.forEach(([key, audioElement]) => {
+        const listeners = listenerState[key];
         if (audioElement && listeners) {
           audioElement.removeEventListener('ended', listeners.ended);
           audioElement.removeEventListener('pause', listeners.pause);
@@ -134,7 +142,7 @@ export function StudyFlashcard({
           audioElement.pause();
           audioElement.currentTime = 0;
         }
-        audioListenersRef.current[key] = undefined;
+        listenerState[key] = undefined;
       });
     };
   }, []);

@@ -6,6 +6,13 @@ interface PageProps {
   params: Promise<{ setId: string }>;
 }
 
+type PrintableWord = {
+  id: string;
+  word: string;
+  teacherDefinition: string | null;
+  definition: string | null;
+};
+
 export default async function PrintMatchingPage({ params }: PageProps) {
   const { setId } = await params;
 
@@ -31,7 +38,7 @@ export default async function PrintMatchingPage({ params }: PageProps) {
   }
 
   // Chunk words into groups of 3 for each 3x2 grid
-  const chunkedWords = [];
+  const chunkedWords: PrintableWord[][] = [];
   for (let i = 0; i < vocabSet.words.length; i += 3) {
     chunkedWords.push(vocabSet.words.slice(i, i + 3));
   }
@@ -42,7 +49,7 @@ export default async function PrintMatchingPage({ params }: PageProps) {
         <div key={pageIndex} className={pageIndex > 0 ? styles.pageBreak : ''}>
           <div className={styles.grid}>
             <div className={styles.wordColumn}>
-              {chunk.map((word) => (
+              {chunk.map((word: PrintableWord) => (
                 <div key={word.id} className={styles.wordCard}>
                   {word.word}
                 </div>
@@ -53,7 +60,7 @@ export default async function PrintMatchingPage({ params }: PageProps) {
               ))}
             </div>
             <div className={styles.defColumn}>
-              {chunk.map((word) => (
+              {chunk.map((word: PrintableWord) => (
                 <div key={`def-${word.id}`} className={styles.defCard}>
                   {word.teacherDefinition || word.definition}
                 </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { WordWithRelations } from "@/lib/study/types";
 
@@ -31,21 +31,65 @@ export function StudyImageModal({
   imageGenerationError,
   imageGenerationNotice,
 }: StudyImageModalProps) {
-  const [imageLoading, setImageLoading] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [loadedImageUrls, setLoadedImageUrls] = useState<Set<string>>(() => new Set());
+  const [failedImageUrls, setFailedImageUrls] = useState<Set<string>>(() => new Set());
+  const [imageRetryKey, setImageRetryKey] = useState(0);
 
   const selectedExample = examples[selectedExampleIndex] ?? null;
 
-  // Reset image loading state when the selected example changes
-  useEffect(() => {
-    if (selectedExample?.imageUrl) {
-      setImageLoading(true);
-      setImageError(false);
-    } else {
-      setImageLoading(false);
-      setImageError(false);
-    }
-  }, [selectedExample?.id, selectedExample?.imageUrl]);
+  const activeImageUrl = selectedExample?.imageUrl ?? null;
+  const imageError = activeImageUrl ? failedImageUrls.has(activeImageUrl) : false;
+  const imageLoading = activeImageUrl ? !imageError && !loadedImageUrls.has(activeImageUrl) : false;
+
+  const handleImageLoad = (url: string) => {
+    setLoadedImageUrls((prev) => {
+      if (prev.has(url)) return prev;
+      const next = new Set(prev);
+      next.add(url);
+      return next;
+    });
+    setFailedImageUrls((prev) => {
+      if (!prev.has(url)) return prev;
+      const next = new Set(prev);
+      next.delete(url);
+      return next;
+    });
+  };
+
+  const handleImageError = (url: string) => {
+    setFailedImageUrls((prev) => {
+      if (prev.has(url)) return prev;
+      const next = new Set(prev);
+      next.add(url);
+      return next;
+    });
+    setLoadedImageUrls((prev) => {
+      if (!prev.has(url)) return prev;
+      const next = new Set(prev);
+      next.delete(url);
+      return next;
+    });
+  };
+
+  const retryImage = (url: string) => {
+    setFailedImageUrls((prev) => {
+      if (!prev.has(url)) return prev;
+      const next = new Set(prev);
+      next.delete(url);
+      return next;
+    });
+    setLoadedImageUrls((prev) => {
+      if (!prev.has(url)) return prev;
+      const next = new Set(prev);
+      next.delete(url);
+      return next;
+    });
+    setImageRetryKey((prev) => prev + 1);
+  };
+
+  const imageContentKey = selectedExample?.imageUrl
+    ? `${selectedExample.id}-${imageRetryKey}`
+    : `no-image-${selectedExampleIndex}`;
 
   // Early return AFTER all hooks have been called
   if (!open || !word) {
@@ -121,7 +165,7 @@ export function StudyImageModal({
               <AnimatePresence mode="wait">
                 {selectedExample?.imageUrl ? (
                   <motion.div
-                    key={selectedExample.imageUrl}
+                    key={imageContentKey}
                     initial={{ opacity: 0.3, scale: 1.02 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
@@ -146,7 +190,7 @@ export function StudyImageModal({
                         </svg>
                         <p className="text-sm font-medium">Image failed to load</p>
                         <button
-                          onClick={() => { setImageError(false); setImageLoading(true); }}
+                          onClick={() => retryImage(selectedExample.imageUrl!)}
                           className="text-xs font-semibold text-indigo-600 hover:underline"
                         >Retry</button>
                       </div>
@@ -159,14 +203,14 @@ export function StudyImageModal({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: imageLoading ? 0 : 1 }}
                         transition={{ duration: 0.5, ease: "easeOut" }}
-                        onLoad={() => setImageLoading(false)}
-                        onError={() => { setImageLoading(false); setImageError(true); }}
+                        onLoad={() => handleImageLoad(selectedExample.imageUrl!)}
+                        onError={() => handleImageError(selectedExample.imageUrl!)}
                       />
                     )}
                   </motion.div>
                 ) : (
                   <motion.div
-                    key="no-image"
+                    key={`no-image-${selectedExampleIndex}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -301,6 +345,22 @@ export function StudyImageModal({
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                   <p className="flex-1">{imageGenerationError}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <AnimatePresence mode="wait">
+              {imageGenerationNotice && !imageGenerationError && (
+                <motion.div
+                  key="notice"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="rounded-xl bg-green-50 border-2 border-green-200 px-5 py-4 text-sm text-green-700 flex items-start gap-3"
+                >
+                  <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <p className="flex-1">{imageGenerationNotice}</p>
                 </motion.div>
               )}
             </AnimatePresence>

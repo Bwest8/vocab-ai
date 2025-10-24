@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { WordWithRelations } from "@/lib/study/types";
 import { toMasteryLevel } from "@/lib/study/utils";
 import type { GameMode } from "@/lib/types";
@@ -11,7 +11,6 @@ interface BaseGameProps {
   reviewWords: WordWithRelations[];
   allWords: WordWithRelations[];
   onResult: (result: GameResult) => void;
-  gameKey: number;
 }
 
 interface MultipleChoiceQuestion {
@@ -152,8 +151,8 @@ const useMultipleChoiceRun = (
   } as const;
 };
 
-export function DefinitionMatchGame({ weeklyWords, reviewWords, allWords, onResult, gameKey }: BaseGameProps) {
-  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords, gameKey]);
+export function DefinitionMatchGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
+  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords]);
   const optionPool = useMemo(() => getOptionPool(shuffledWords, reviewWords, allWords), [shuffledWords, reviewWords, allWords]);
   const questions = useMemo(
     () => buildMultipleChoiceQuestions(shuffledWords, optionPool, "definition"),

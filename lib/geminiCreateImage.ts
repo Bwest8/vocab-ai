@@ -44,9 +44,7 @@ function sanitizeForFileName(value: string): string {
 }
 
 export async function generateExampleImage({
-  vocabSetId,
   vocabSetName,
-  exampleId,
   word,
   imageDescription,
   aspectRatio = '16:9',

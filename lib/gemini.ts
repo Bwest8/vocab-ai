@@ -402,13 +402,12 @@ function normalizeSingleExample(
     'imagePrompt',
   ]);
 
-  const sentence = ensureSentence(coerceToTrimmedString(sentenceSource), word, exampleIndex, record);
+  const sentence = ensureSentence(coerceToTrimmedString(sentenceSource), word, exampleIndex);
   const image_description = ensureImageDescription(
     coerceToTrimmedString(imageDescriptionSource),
     word,
     sentence,
-    exampleIndex,
-    record
+    exampleIndex
   );
 
   return { sentence, image_description };
@@ -417,8 +416,7 @@ function normalizeSingleExample(
 function ensureSentence(
   candidate: string | null,
   word: string,
-  exampleIndex: number,
-  rawExample: Record<string, unknown>
+  exampleIndex: number
 ): string {
   if (candidate) {
     return candidate;
@@ -431,8 +429,7 @@ function ensureImageDescription(
   candidate: string | null,
   word: string,
   sentence: string,
-  exampleIndex: number,
-  rawExample: Record<string, unknown>
+  exampleIndex: number
 ): string {
   if (candidate) {
     return candidate;
@@ -441,7 +438,7 @@ function ensureImageDescription(
   throw new Error(`Missing image description for example ${exampleIndex} of word "${word}"`);
 }
 
-function extractArray(value: unknown, fallbackKeys?: string[]): any[] {
+function extractArray(value: unknown, fallbackKeys?: string[]): unknown[] {
   if (Array.isArray(value)) {
     return value;
   }

@@ -93,7 +93,7 @@ export default function Navigation({ onNavigate, closeOnNavigate = false }: Navi
                 >
                   <Link
                     href={item.href}
-                    onClick={(e) => {
+                    onClick={() => {
                       if (closeOnNavigate) {
                         // Try closing any open radix sheet/dialog by clicking close button if present
                         const btn = document.querySelector('[data-slot="sheet-close"], [data-radix-dialog-close]') as HTMLButtonElement | null;
