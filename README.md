@@ -90,6 +90,32 @@ npm run dev
 
 Open http://localhost:3000
 
+## Docker Compose (optional)
+
+You can run Postgres (and the app) with Docker Compose using variables from `.env`.
+
+1) Copy `.env.example` to `.env` and edit values (absolute paths for storage are recommended):
+
+```bash
+cp .env.example .env
+```
+
+2) Start the stack:
+
+```bash
+docker compose up -d
+```
+
+What it does:
+- Starts PostgreSQL 18 on `${POSTGRES_HOST_PORT}` (defaults to 5432) and stores data under `${POSTGRES_DATA_DIR}`
+- Starts the Next.js app on http://localhost:3000 after applying Prisma migrations
+- Uses `${VOCAB_IMAGES_DIR}` and `${TTS_CACHE_DIR}` as bind-mounted storage for images and audio
+
+Notes:
+- Compose reads substitution variables from `.env` automatically. We also include `env_file: .env` so variables are available inside containers.
+- 5432 is the default host port in this compose file; change `POSTGRES_HOST_PORT` only if 5432 is already in use.
+- Avoid `~` in path values inside `.env`; use absolute paths instead.
+
 ## Project Structure
 
 ```

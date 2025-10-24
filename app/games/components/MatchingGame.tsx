@@ -38,12 +38,7 @@ export function MatchingGame({ weeklyWords, reviewWords, allWords, onResult, gam
   const [attempts, setAttempts] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
 
-  useEffect(() => {
-    if (gameWords.length > 0) {
-      initializeGame();
-    }
-  }, [gameWords, gameKey]);
-
+  // Initialize a new shuffled set of cards for a round
   const initializeGame = () => {
     const gameCards: GameCard[] = [];
 
@@ -70,6 +65,12 @@ export function MatchingGame({ weeklyWords, reviewWords, allWords, onResult, gam
     setAttempts(0);
     setIsComplete(false);
   };
+
+  useEffect(() => {
+    if (gameWords.length > 0) {
+      initializeGame();
+    }
+  }, [gameWords, gameKey]);
 
   const handleCardClick = (cardId: string) => {
     if (selectedCards.includes(cardId)) return;
