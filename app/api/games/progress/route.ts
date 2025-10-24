@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import type { GameMode } from "@/lib/types";
 
 const DEFAULT_PROFILE_KEY = "default";
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
   const mode = body.mode;
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       let profile = await tx.gameProfile.findUnique({ where: { profileKey } });
 
       if (!profile) {
@@ -172,7 +173,7 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const profile = await tx.gameProfile.findUnique({ where: { profileKey } });
 
       if (!profile) {
