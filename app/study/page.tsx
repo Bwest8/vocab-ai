@@ -20,8 +20,8 @@ export default function StudyPage() {
     masterySegments,
     simpleSegments,
     totalWords,
-    recentWinStreak,
-    recentWinWordIds,
+  recentWinStreak,
+  recentWinWordIds,
     errorMessage,
     words,
     wordsState,
@@ -83,7 +83,7 @@ export default function StudyPage() {
             onOpenImageModal={handleOpenImageModal}
             currentMastery={currentMastery}
             recentWinStreak={recentWinStreak}
-            isRecentWinForCurrent={Boolean(currentWord && recentWinWordIds.has(currentWord.id))}
+            isRecentWinForCurrent={Boolean(currentWord && recentWinWordIds.includes(currentWord.id))}
           />
 
           <aside className="flex flex-col gap-6">

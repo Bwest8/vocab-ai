@@ -33,8 +33,8 @@ npm run dev                    # Start with Turbopack
 ```
 
 Supabase (local):
-- Database: postgres on localhost:54322 (default)
-- Studio (UI): http://localhost:54323/
+- Database: postgres on 192.168.1.254:5432 (default)
+- Studio (UI): http://192.168.1.254:5432
 - Ensure your `DATABASE_URL` points to the local Supabase Postgres instance.
 
 ### Database Commands

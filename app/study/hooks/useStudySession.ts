@@ -29,7 +29,7 @@ interface UseStudySessionResult {
   simpleSegments: import("@/lib/study/types").SimpleSegment[];
   totalWords: number;
   recentWinStreak: number;
-  recentWinWordIds: Set<string>;
+  recentWinWordIds: string[];
   currentWord: WordWithRelations | null;
   currentExamples: NonNullable<WordWithRelations["examples"]>;
   selectedExample: NonNullable<WordWithRelations["examples"]>[number] | null;
@@ -66,7 +66,7 @@ export function useStudySession(): UseStudySessionResult {
   const [imageGenerationError, setImageGenerationError] = useState<string | null>(null);
   const [imageGenerationNotice, setImageGenerationNotice] = useState<string | null>(null);
   const [recentWinStreak, setRecentWinStreak] = useState(0);
-  const [recentWinWordIds, setRecentWinWordIds] = useState<Set<string>>(() => new Set());
+  const [recentWinWordIdsSet, setRecentWinWordIdsSet] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     let active = true;
@@ -218,7 +218,7 @@ export function useStudySession(): UseStudySessionResult {
       if (!selectedSetId) {
         if (!active) return;
         setRecentWinStreak(0);
-        setRecentWinWordIds(new Set());
+        setRecentWinWordIdsSet(new Set());
         return;
       }
       try {
@@ -239,12 +239,12 @@ export function useStudySession(): UseStudySessionResult {
           if (a.correct && a.wordId) winsByWord.add(a.wordId);
         }
         setRecentWinStreak(streak);
-        setRecentWinWordIds(winsByWord);
+        setRecentWinWordIdsSet(winsByWord);
       } catch (err) {
         // Non-fatal; just clear
         if (!active) return;
         setRecentWinStreak(0);
-        setRecentWinWordIds(new Set());
+        setRecentWinWordIdsSet(new Set());
       }
     };
 
@@ -382,7 +382,7 @@ export function useStudySession(): UseStudySessionResult {
         throw new Error(data?.error ?? "Failed to generate image for this example.");
       }
 
-      const updatedExample = data.example as NonNullable<WordWithRelations["examples"]>[number];
+  const updatedExample = data.example as NonNullable<WordWithRelations["examples"]>[number];
 
       setWords((prevWords) =>
         prevWords.map((word) =>
@@ -390,7 +390,9 @@ export function useStudySession(): UseStudySessionResult {
             ? {
                 ...word,
                 examples: (word.examples ?? []).map((example) =>
-                  example.id === updatedExample.id ? { ...example, imageUrl: updatedExample.imageUrl } : example
+                  example.id === updatedExample.id
+                    ? { ...example, imageUrl: updatedExample.imageUrl, updatedAt: updatedExample.updatedAt }
+                    : example
                 ),
               }
             : word
@@ -439,11 +441,11 @@ export function useStudySession(): UseStudySessionResult {
     generationQueue,
     imageGenerationError,
     imageGenerationNotice,
-    masterySegments,
+  masterySegments,
   simpleSegments,
-    totalWords,
+  totalWords,
   recentWinStreak,
-  recentWinWordIds,
+  recentWinWordIds: Array.from(recentWinWordIdsSet),
     currentWord,
     currentExamples,
     selectedExample,

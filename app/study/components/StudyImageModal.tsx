@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { WordWithRelations } from "@/lib/study/types";
 
@@ -34,12 +36,50 @@ export function StudyImageModal({
   const [loadedImageUrls, setLoadedImageUrls] = useState<Set<string>>(() => new Set());
   const [failedImageUrls, setFailedImageUrls] = useState<Set<string>>(() => new Set());
   const [imageRetryKey, setImageRetryKey] = useState(0);
+  // Smooth crossfade support
+  const [displayUrl, setDisplayUrl] = useState<string | null>(null);
+  const [transitionUrl, setTransitionUrl] = useState<string | null>(null);
 
   const selectedExample = examples[selectedExampleIndex] ?? null;
 
-  const activeImageUrl = selectedExample?.imageUrl ?? null;
-  const imageError = activeImageUrl ? failedImageUrls.has(activeImageUrl) : false;
-  const imageLoading = activeImageUrl ? !imageError && !loadedImageUrls.has(activeImageUrl) : false;
+  // Build a cache-busted URL so freshly regenerated images (same filename) actually reload in the PWA.
+  // Uses the example.updatedAt timestamp which changes on successful generation.
+  const cacheBustedUrl = selectedExample?.imageUrl
+    ? `${selectedExample.imageUrl}${selectedExample?.updatedAt ? `?v=${new Date(selectedExample.updatedAt as unknown as string).getTime()}` : ''}`
+    : null;
+
+  const activeImageUrl = cacheBustedUrl;
+
+  // Decide which URLs to render for crossfade
+  useEffect(() => {
+    if (!open) {
+      setDisplayUrl(null);
+      setTransitionUrl(null);
+      return;
+    }
+    if (!activeImageUrl) {
+      setDisplayUrl(null);
+      setTransitionUrl(null);
+      return;
+    }
+    // First time: show current as display
+    if (!displayUrl) {
+      setDisplayUrl(activeImageUrl);
+      return;
+    }
+    // If URL changed, start a transition
+    if (activeImageUrl !== displayUrl && activeImageUrl !== transitionUrl) {
+      setTransitionUrl(activeImageUrl);
+    }
+  }, [open, activeImageUrl, displayUrl, transitionUrl]);
+
+  const baseUrl = displayUrl;
+  const overlayUrl = transitionUrl;
+
+  const baseError = baseUrl ? failedImageUrls.has(baseUrl) : false;
+  const overlayError = overlayUrl ? failedImageUrls.has(overlayUrl) : false;
+  const baseLoaded = baseUrl ? loadedImageUrls.has(baseUrl) && !baseError : false;
+  const overlayLoaded = overlayUrl ? loadedImageUrls.has(overlayUrl) && !overlayError : false;
 
   const handleImageLoad = (url: string) => {
     setLoadedImageUrls((prev) => {
@@ -164,50 +204,72 @@ export function StudyImageModal({
             <div className="relative w-full aspect-[16/9] bg-slate-100 rounded-xl overflow-hidden">
               <AnimatePresence mode="wait">
                 {selectedExample?.imageUrl ? (
-                  <motion.div
-                    key={imageContentKey}
-                    initial={{ opacity: 0.3, scale: 1.02 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className="absolute inset-0"
-                  >
-                    {/* Loading overlay */}
-                    {imageLoading && (
-                      <motion.div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+                  <div className="absolute inset-0">
+                    {/* Base image (currently displayed) */}
+                    {baseUrl && !baseError && (
+                      <motion.img
+                        key={`base-${baseUrl}`}
+                        src={baseUrl}
+                        alt={selectedExample.sentence}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: baseLoaded ? 1 : 0.001 }}
+                        transition={{ duration: 0.35, ease: "easeOut" }}
+                        onLoad={() => handleImageLoad(baseUrl)}
+                        onError={() => handleImageError(baseUrl)}
+                      />
+                    )}
+
+                    {/* Incoming image (crossfade overlay) */}
+                    {overlayUrl && !overlayError && (
+                      <motion.img
+                        key={`overlay-${overlayUrl}`}
+                        src={overlayUrl}
+                        alt={selectedExample.sentence}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: overlayLoaded ? 1 : 0 }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                        onLoad={() => {
+                          handleImageLoad(overlayUrl);
+                          // Commit the transition
+                          setDisplayUrl(overlayUrl);
+                          setTransitionUrl(null);
+                        }}
+                        onError={() => {
+                          handleImageError(overlayUrl);
+                          setTransitionUrl(null);
+                        }}
+                      />
+                    )}
+
+                    {/* Center spinner only when no image is visible yet */}
+                    {!baseLoaded && !overlayLoaded && (baseUrl || overlayUrl) && (
+                      <div className="absolute inset-0 flex items-center justify-center">
                         <motion.div
-                          className="h-14 w-14 rounded-full border-4 border-indigo-200 border-t-indigo-600"
+                          className="h-12 w-12 rounded-full border-4 border-indigo-200 border-t-indigo-600"
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                         />
-                      </motion.div>
+                      </div>
                     )}
-                    {/* Image error state */}
-                    {imageError && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-red-500 bg-white">
+
+                    {/* Error overlay if both sources failed */}
+                    {((baseUrl && baseError) || (overlayUrl && overlayError)) && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-red-500 bg-white/90">
                         <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <p className="text-sm font-medium">Image failed to load</p>
-                        <button
-                          onClick={() => retryImage(selectedExample.imageUrl!)}
-                          className="text-xs font-semibold text-indigo-600 hover:underline"
-                        >Retry</button>
+                        {selectedExample.imageUrl && (
+                          <button
+                            onClick={() => retryImage(selectedExample.imageUrl!)}
+                            className="text-xs font-semibold text-indigo-600 hover:underline"
+                          >Retry</button>
+                        )}
                       </div>
                     )}
-                    {!imageError && (
-                      <motion.img
-                        src={selectedExample.imageUrl}
-                        alt={selectedExample.sentence}
-                        className="absolute inset-0 w-full h-full object-cover"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: imageLoading ? 0 : 1 }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                        onLoad={() => handleImageLoad(selectedExample.imageUrl!)}
-                        onError={() => handleImageError(selectedExample.imageUrl!)}
-                      />
-                    )}
-                  </motion.div>
+                  </div>
                 ) : (
                   <motion.div
                     key={`no-image-${selectedExampleIndex}`}
