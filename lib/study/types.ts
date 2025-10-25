@@ -1,4 +1,4 @@
-import type { MasteryLevel, StudyProgress, VocabSet, VocabWord } from "@/lib/types";
+import type { MasteryLevel, StudyProgress, VocabSet, VocabWord, SimpleProgressState } from "@/lib/types";
 
 export type FetchState = "idle" | "loading" | "error";
 
@@ -15,6 +15,13 @@ export type MasterySummary = Record<MasteryLevel, number>;
 
 export interface MasterySegment {
   level: MasteryLevel;
+  label: string;
+  count: number;
+  percentage: number;
+}
+
+export interface SimpleSegment {
+  key: SimpleProgressState;
   label: string;
   count: number;
   percentage: number;

@@ -120,6 +120,32 @@ export const MASTERY_COLORS: Record<MasteryLevel, string> = {
   5: 'bg-emerald-200 text-emerald-700',
 };
 
+// Simplified, child-friendly progress states for UI
+// learn: just starting or needs practice (levels 0-1)
+// grow: getting it with some practice (levels 2-3)
+// know: knows it well / mastered (levels 4-5)
+export type SimpleProgressState = 'learn' | 'grow' | 'know';
+
+export const SIMPLE_STATE_LABELS: Record<SimpleProgressState, string> = {
+  learn: 'Learning',
+  grow: 'Getting It',
+  know: 'Mastered',
+};
+
+// Color-blind friendly, high-contrast backgrounds for small badges/dots
+export const SIMPLE_STATE_COLORS_BG: Record<SimpleProgressState, string> = {
+  learn: 'bg-amber-400',
+  grow: 'bg-sky-500',
+  know: 'bg-emerald-500',
+};
+
+// For pill badges (bg + text)
+export const SIMPLE_STATE_PILL: Record<SimpleProgressState, string> = {
+  learn: 'bg-amber-100 text-amber-800',
+  grow: 'bg-sky-100 text-sky-800',
+  know: 'bg-emerald-100 text-emerald-800',
+};
+
 // Game-related types
 export type GameMode =
   | "definition-match"
@@ -171,4 +197,18 @@ export interface GameResultPayload {
   correct: boolean;
   pointsAwarded: number;
   timeRemaining?: number;
+  // Optional word identifier to link game results to a specific vocabulary word
+  wordId?: string;
+}
+
+export interface GameAttemptRecord {
+  id: string;
+  profileId: string | null;
+  vocabSetId: string;
+  wordId: string | null;
+  mode: GameMode;
+  correct: boolean;
+  pointsAwarded: number;
+  timeRemaining?: number | null;
+  createdAt: string;
 }

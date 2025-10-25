@@ -85,6 +85,7 @@ export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onRe
       mode: "reverse-definition",
       correct,
       pointsAwarded: correct ? 12 : 0,
+      wordId: currentQuestion.id,
     });
 
     setTimeout(() => {

@@ -121,6 +121,7 @@ const useMultipleChoiceRun = (
       mode,
       correct,
       pointsAwarded: correct ? POINTS[mode] : 0,
+      wordId: currentQuestion.id,
     });
 
     timeoutRef.current = window.setTimeout(() => {

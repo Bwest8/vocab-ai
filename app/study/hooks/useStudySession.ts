@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { MasteryLevel, StudyProgress } from "@/lib/types";
-import { buildMasterySegments, toMasteryLevel, upsertProgressList } from "@/lib/study/utils";
+import { buildMasterySegments, buildSimpleSegments, toMasteryLevel, upsertProgressList } from "@/lib/study/utils";
 import type {
   FetchState,
   MasterySegment,
@@ -26,7 +26,10 @@ interface UseStudySessionResult {
   imageGenerationError: string | null;
   imageGenerationNotice: string | null;
   masterySegments: MasterySegment[];
+  simpleSegments: import("@/lib/study/types").SimpleSegment[];
   totalWords: number;
+  recentWinStreak: number;
+  recentWinWordIds: Set<string>;
   currentWord: WordWithRelations | null;
   currentExamples: NonNullable<WordWithRelations["examples"]>;
   selectedExample: NonNullable<WordWithRelations["examples"]>[number] | null;
@@ -62,6 +65,8 @@ export function useStudySession(): UseStudySessionResult {
   const [generationQueue, setGenerationQueue] = useState<string[]>([]);
   const [imageGenerationError, setImageGenerationError] = useState<string | null>(null);
   const [imageGenerationNotice, setImageGenerationNotice] = useState<string | null>(null);
+  const [recentWinStreak, setRecentWinStreak] = useState(0);
+  const [recentWinWordIds, setRecentWinWordIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     let active = true;
@@ -201,7 +206,56 @@ export function useStudySession(): UseStudySessionResult {
   }, [selectedExampleIndex, showImageModal]);
 
   const masterySegments = useMemo(() => buildMasterySegments(words), [words]);
+  const simpleSegments = useMemo(() => buildSimpleSegments(words), [words]);
   const totalWords = words.length;
+
+  // Fetch recent game attempts to surface a "recent wins" streak chip in Study view
+  useEffect(() => {
+    let active = true;
+    let timer: number | null = null;
+
+    const fetchRecent = async () => {
+      if (!selectedSetId) {
+        if (!active) return;
+        setRecentWinStreak(0);
+        setRecentWinWordIds(new Set());
+        return;
+      }
+      try {
+        const params = new URLSearchParams({ setId: selectedSetId, minutes: String(30), includeIncorrect: 'true' });
+        const res = await fetch(`/api/games/attempts?${params.toString()}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error('Failed to load attempts');
+        const data = (await res.json()) as { attempts: Array<{ wordId: string | null; correct: boolean; createdAt: string }> };
+        if (!active) return;
+
+        const attempts = data.attempts || [];
+        // Compute streak from newest going backwards until first incorrect
+        let streak = 0;
+        for (const a of attempts) {
+          if (a.correct) streak += 1; else break;
+        }
+        const winsByWord = new Set<string>();
+        for (const a of attempts) {
+          if (a.correct && a.wordId) winsByWord.add(a.wordId);
+        }
+        setRecentWinStreak(streak);
+        setRecentWinWordIds(winsByWord);
+      } catch (err) {
+        // Non-fatal; just clear
+        if (!active) return;
+        setRecentWinStreak(0);
+        setRecentWinWordIds(new Set());
+      }
+    };
+
+    void fetchRecent();
+    // Refresh periodically to reflect ongoing games (every 25s)
+    timer = window.setInterval(() => { void fetchRecent(); }, 25_000);
+    return () => {
+      active = false;
+      if (timer) window.clearInterval(timer);
+    };
+  }, [selectedSetId]);
 
   const handleSelectSet = (setId: string) => {
     setSelectedSetId(setId);
@@ -386,7 +440,10 @@ export function useStudySession(): UseStudySessionResult {
     imageGenerationError,
     imageGenerationNotice,
     masterySegments,
+  simpleSegments,
     totalWords,
+  recentWinStreak,
+  recentWinWordIds,
     currentWord,
     currentExamples,
     selectedExample,

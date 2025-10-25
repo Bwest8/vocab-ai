@@ -1,8 +1,9 @@
 'use client';
 
-import { toMasteryLevel } from "@/lib/study/utils";
-import { MASTERY_COLORS } from "@/lib/types";
+import { toSimpleState } from "@/lib/study/utils";
+import { SIMPLE_STATE_COLORS_BG, SIMPLE_STATE_LABELS } from "@/lib/types";
 import type { WordWithRelations } from "@/lib/study/types";
+import { useEffect, useRef } from "react";
 
 interface StudyWordListProps {
   words: WordWithRelations[];
@@ -15,6 +16,13 @@ export function StudyWordList({ words, currentIndex, onSelectWord }: StudyWordLi
     return null;
   }
 
+  const activeRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    const el = activeRef.current;
+    if (!el) return;
+    el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  }, [currentIndex]);
+
   return (
     <section className="rounded-3xl border border-white/40 bg-white/80 px-3 py-3 shadow-lg backdrop-blur-xl">
       <header className="mb-2 flex items-center justify-between">
@@ -25,7 +33,7 @@ export function StudyWordList({ words, currentIndex, onSelectWord }: StudyWordLi
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-2">
         {words.map((word, index) => {
           const progress = word.progress?.find((item) => item.userId == null);
-          const mastery = toMasteryLevel(progress?.masteryLevel);
+          const state = toSimpleState(progress?.masteryLevel);
           const isActive = index === currentIndex;
 
           return (
@@ -33,16 +41,20 @@ export function StudyWordList({ words, currentIndex, onSelectWord }: StudyWordLi
               key={word.id}
               type="button"
               onClick={() => onSelectWord(index)}
-              className={`group relative flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+              className={`group relative flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
                 isActive
                   ? "border-indigo-400 bg-indigo-50 shadow-sm"
                   : "border-slate-200 bg-white hover:border-indigo-200 hover:bg-slate-50"
               }`}
               aria-current={isActive}
+              ref={isActive ? activeRef : undefined}
             >
-              <span className={`inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full ${MASTERY_COLORS[mastery]}`} />
-              <span className={`text-sm font-bold leading-tight ${isActive ? 'text-indigo-900' : 'text-slate-900'}`}>
+              <span className={`inline-block h-2.5 w-2.5 flex-shrink-0 rounded-full ${SIMPLE_STATE_COLORS_BG[state]}`} />
+              <span className={`text-base font-bold leading-tight ${isActive ? 'text-indigo-900' : 'text-slate-900'}`}>
                 {word.word}
+              </span>
+              <span className={`ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${isActive ? 'bg-indigo-100 text-indigo-800' : 'bg-white text-slate-500 border border-slate-200'}`}>
+                {SIMPLE_STATE_LABELS[state]}
               </span>
             </button>
           );

@@ -13,6 +13,7 @@ interface ProgressRequestBody {
   correct?: boolean;
   pointsAwarded?: number;
   timeRemaining?: number;
+  wordId?: string;
 }
 
 const startOfUtcDay = (date: Date) => {
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
   const now = new Date();
   const vocabSetId = body.vocabSetId;
   const mode = body.mode;
+  const wordId = (body.wordId && body.wordId.trim().length > 0) ? body.wordId : null;
 
   try {
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -138,6 +140,51 @@ export async function POST(request: Request) {
             completedAt,
           },
         });
+      }
+
+      // Optionally record a game attempt row (word-level granularity)
+      // and update StudyProgress for the word if provided.
+      if (wordId) {
+        // Insert attempt record
+        await tx.$executeRawUnsafe(
+          `INSERT INTO game_attempts (profile_id, vocab_set_id, word_id, mode, correct, points_awarded, time_remaining, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+          profile.id,
+          vocabSetId,
+          wordId,
+          mode,
+          isCorrect,
+          pointsAwarded,
+          body.timeRemaining ?? null,
+        );
+
+        // Upsert study progress (mirrors /api/progress logic, userId is null by design)
+        const existing = await tx.studyProgress.findFirst({ where: { wordId, userId: null } });
+        if (!existing) {
+          await tx.studyProgress.create({
+            data: {
+              wordId,
+              userId: null,
+              correctCount: isCorrect ? 1 : 0,
+              incorrectCount: isCorrect ? 0 : 1,
+              masteryLevel: isCorrect ? 1 : 0,
+              lastStudied: now,
+            },
+          });
+        } else {
+          const newMasteryLevel = isCorrect
+            ? Math.min(existing.masteryLevel + 1, 5)
+            : Math.max(existing.masteryLevel - 1, 0);
+          await tx.studyProgress.update({
+            where: { id: existing.id },
+            data: {
+              correctCount: isCorrect ? existing.correctCount + 1 : existing.correctCount,
+              incorrectCount: !isCorrect ? existing.incorrectCount + 1 : existing.incorrectCount,
+              masteryLevel: newMasteryLevel,
+              lastStudied: now,
+            },
+          });
+        }
       }
 
       const modeProgress = await tx.gameModeProgress.findMany({

@@ -98,6 +98,7 @@ export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult }:
       correct,
       pointsAwarded: correct ? 8 + Math.max(0, timeLeft - 20) : 0,
       timeRemaining: timeLeft,
+      wordId: currentWord.id,
     });
   };
 

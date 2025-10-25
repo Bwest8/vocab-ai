@@ -1,5 +1,6 @@
 'use client';
-import { MASTERY_COLORS, MASTERY_LABELS, type MasteryLevel } from "@/lib/types";
+import { SIMPLE_STATE_PILL, SIMPLE_STATE_LABELS, type MasteryLevel } from "@/lib/types";
+import { toSimpleState } from "@/lib/study/utils";
 import type { FetchState, WordWithRelations } from "@/lib/study/types";
 import { Eye, EyeOff, Images } from "lucide-react";
 import { useEffect, useRef, useState } from 'react';
@@ -21,6 +22,8 @@ interface StudyFlashcardProps {
   onToggleDetails: () => void;
   onOpenImageModal: (exampleIndex: number) => void;
   currentMastery: MasteryLevel;
+  recentWinStreak?: number;
+  isRecentWinForCurrent?: boolean;
 }
 
 export function StudyFlashcard({
@@ -33,6 +36,8 @@ export function StudyFlashcard({
   onToggleDetails,
   onOpenImageModal,
   currentMastery,
+  recentWinStreak = 0,
+  isRecentWinForCurrent = false,
 }: StudyFlashcardProps) {
   const currentExamples = currentWord?.examples ?? [];
   const [audioLoading, setAudioLoading] = useState<Record<AudioKey, boolean>>({
@@ -250,10 +255,28 @@ export function StudyFlashcard({
             Word {currentIndex + 1} of {words.length}
           </p>
         </div>
-        <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${MASTERY_COLORS[currentMastery]}`}>
-          <span className="h-2 w-2 rounded-full bg-current" />
-          {MASTERY_LABELS[currentMastery]}
-        </span>
+        <div className="flex items-center gap-2">
+        {(() => {
+          const state = toSimpleState(currentMastery);
+          return (
+            <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${SIMPLE_STATE_PILL[state]}`}>
+              <span className="h-2 w-2 rounded-full bg-current" />
+              {SIMPLE_STATE_LABELS[state]}
+            </span>
+          );
+        })()}
+        {recentWinStreak > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+            <span className="text-base leading-none">🔥</span>
+            Streak {recentWinStreak}
+          </span>
+        )}
+        {isRecentWinForCurrent && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">
+            Just won!
+          </span>
+        )}
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col justify-center gap-6 py-6">

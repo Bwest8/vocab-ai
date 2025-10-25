@@ -7,13 +7,10 @@ import { StudyImageModal } from "./components/StudyImageModal";
 import { StudyWordList } from "./components/StudyWordList";
 import { useStudySession } from "./hooks/useStudySession";
 
-const MASTERY_SEGMENT_BG: Record<number, string> = {
-  0: "bg-gray-300",
-  1: "bg-red-300",
-  2: "bg-orange-300",
-  3: "bg-yellow-300",
-  4: "bg-green-300",
-  5: "bg-emerald-400",
+const SIMPLE_BG: Record<'learn'|'grow'|'know', string> = {
+  learn: 'bg-amber-400',
+  grow: 'bg-sky-500',
+  know: 'bg-emerald-500',
 };
 
 export default function StudyPage() {
@@ -21,7 +18,10 @@ export default function StudyPage() {
     vocabSets,
     selectedSetId,
     masterySegments,
+    simpleSegments,
     totalWords,
+    recentWinStreak,
+    recentWinWordIds,
     errorMessage,
     words,
     wordsState,
@@ -82,6 +82,8 @@ export default function StudyPage() {
             onToggleDetails={toggleDetails}
             onOpenImageModal={handleOpenImageModal}
             currentMastery={currentMastery}
+            recentWinStreak={recentWinStreak}
+            isRecentWinForCurrent={Boolean(currentWord && recentWinWordIds.has(currentWord.id))}
           />
 
           <aside className="flex flex-col gap-6">
@@ -100,22 +102,22 @@ export default function StudyPage() {
                   </span>
                 </header>
                 <div className="flex h-3 overflow-hidden rounded-full border border-white/60 bg-slate-100">
-                  {masterySegments
+                  {simpleSegments
                     .filter((segment) => segment.percentage > 0)
                     .map((segment, index, array) => (
                       <div
-                        key={segment.level}
-                        className={`${MASTERY_SEGMENT_BG[segment.level]} ${index !== array.length - 1 ? "border-r border-white/80" : ""} h-full transition-[width] duration-500 ease-out`}
+                        key={segment.key}
+                        className={`${SIMPLE_BG[segment.key]} ${index !== array.length - 1 ? "border-r border-white/80" : ""} h-full transition-[width] duration-500 ease-out`}
                         style={{ width: `${segment.percentage}%` }}
                         aria-label={`${segment.label}: ${segment.count} words`}
                         title={`${segment.label}: ${segment.count} words (${Math.round(segment.percentage)}%)`}
                       />
                     ))}
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500 sm:grid-cols-3">
-                  {masterySegments.filter((segment) => segment.count > 0).map((segment) => (
-                    <div key={segment.level} className="flex items-center gap-2 rounded-xl bg-white/60 px-2 py-1">
-                      <span className={`inline-block h-2 w-2 rounded-full ${MASTERY_SEGMENT_BG[segment.level]}`} />
+                <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-500">
+                  {simpleSegments.map((segment) => (
+                    <div key={segment.key} className="flex items-center gap-2 rounded-xl bg-white/60 px-2 py-1">
+                      <span className={`inline-block h-2 w-2 rounded-full ${SIMPLE_BG[segment.key]}`} />
                       <span className="font-medium text-slate-600">
                         {segment.label}: {segment.count}
                       </span>
@@ -132,8 +134,6 @@ export default function StudyPage() {
         <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/70 bg-white/95 backdrop-blur lg:sticky">
           <div className="mx-auto flex w-full max-w-6xl px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:pb-4">
             <StudyControls
-              onPrevious={goToPreviousWord}
-              onNext={goToNextWord}
               onMarkIncorrect={() => handleProgress(false)}
               onMarkCorrect={() => handleProgress(true)}
               disabled={isUpdatingProgress}

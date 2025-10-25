@@ -100,7 +100,7 @@ export function WordScrambleGame({ weeklyWords, allWords, onResult }: BaseGamePr
     // Simple penalty system for hints
     const penalty = (hintStep >= 1 ? 2 : 0) + (hintStep >= 2 ? 1 : 0) + (revealFirst ? 1 : 0) + (revealLast ? 1 : 0);
     const awarded = Math.max(1, POINTS - penalty);
-    onResult({ mode: MODE, correct, pointsAwarded: correct ? awarded : 0 });
+  onResult({ mode: MODE, correct, pointsAwarded: correct ? awarded : 0, wordId: current.id });
 
     if (correct) {
       setScore((s) => s + 1);

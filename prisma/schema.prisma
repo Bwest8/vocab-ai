@@ -16,6 +16,7 @@ model VocabSet {
   updatedAt    DateTime           @updatedAt
   gameProgress GameModeProgress[]
   words        VocabWord[]
+  attempts     GameAttempt[]
 
   @@map("vocab_sets")
 }
@@ -33,6 +34,7 @@ model VocabWord {
   progress          StudyProgress[]
   examples          VocabExample[]
   vocabSet          VocabSet        @relation(fields: [vocabSetId], references: [id], onDelete: Cascade)
+  attempts          GameAttempt[]
 
   @@index([vocabSetId])
   @@map("vocab_words")
@@ -83,6 +85,7 @@ model GameProfile {
   createdAt          DateTime           @default(now()) @map("created_at")
   updatedAt          DateTime           @updatedAt @map("updated_at")
   modeProgress       GameModeProgress[]
+  attempts           GameAttempt[]
 
   @@map("game_profiles")
 }
@@ -105,4 +108,27 @@ model GameModeProgress {
   @@index([vocabSetId])
   @@index([profileId])
   @@map("game_mode_progress")
+}
+
+/// Individual game attempts for auditing and per-word analytics
+model GameAttempt {
+  id             String      @id @default(cuid())
+  profileId      String?     @map("profile_id")
+  vocabSetId     String      @map("vocab_set_id")
+  wordId         String?     @map("word_id")
+  mode           String      @db.VarChar(40)
+  correct        Boolean
+  pointsAwarded  Int         @default(0) @map("points_awarded")
+  timeRemaining  Int?        @map("time_remaining")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  profile        GameProfile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  vocabSet       VocabSet      @relation(fields: [vocabSetId], references: [id], onDelete: Cascade)
+  word           VocabWord?    @relation(fields: [wordId], references: [id], onDelete: SetNull)
+
+  @@index([profileId])
+  @@index([vocabSetId])
+  @@index([wordId])
+  @@index([mode])
+  @@map("game_attempts")
 }

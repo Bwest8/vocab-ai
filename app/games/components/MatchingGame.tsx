@@ -86,10 +86,19 @@ export function MatchingGame({ weeklyWords, reviewWords: _reviewWords, allWords,
 
       if (card1 && card2 && card1.matchId === card2.matchId) {
         // Match found!
+        // Derive the word index from matchId (format: "match-<index>") and map to the underlying word id
+        let matchedWordId: string | undefined;
+        const parts = (card1.matchId || '').split('-');
+        const idx = parts.length === 2 ? parseInt(parts[1], 10) : NaN;
+        if (Number.isFinite(idx) && idx >= 0 && idx < gameWords.length) {
+          matchedWordId = gameWords[idx].id;
+        }
+
         onResult({
           mode: "matching",
           correct: true,
           pointsAwarded: 10,
+          wordId: matchedWordId,
         });
         
         setTimeout(() => {

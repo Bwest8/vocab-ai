@@ -86,7 +86,7 @@ export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResul
     const correct = option === current.correct;
     setFeedback(correct ? "Great choice!" : `Try again—"${current.correct}" fits best here.`);
 
-    onResult({ mode: "fill-in-the-blank", correct, pointsAwarded: correct ? 14 : 0 });
+  onResult({ mode: "fill-in-the-blank", correct, pointsAwarded: correct ? 14 : 0, wordId: current.id });
 
     timeoutRef.current = window.setTimeout(() => {
       setSelected(null);
