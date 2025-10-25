@@ -343,9 +343,8 @@ export function useStudySession(): UseStudySessionResult {
         )
       );
 
-      setImageGenerationNotice(
-        slotIndex >= 0 ? `Image ready for example #${slotIndex + 1}!` : "Image generated successfully!"
-      );
+      // Success notice not needed; the image appearing is sufficient UX.
+      // Intentionally do not set imageGenerationNotice.
     } catch (error) {
       setImageGenerationError(
         error instanceof Error ? error.message : "Unable to generate image for this example."
