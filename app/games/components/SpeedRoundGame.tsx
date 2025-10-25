@@ -171,3 +171,5 @@ export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult }:
     </div>
   );
 }
+
+SpeedRoundGame.static = false;

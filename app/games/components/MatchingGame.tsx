@@ -223,3 +223,5 @@ export function MatchingGame({ weeklyWords, reviewWords: _reviewWords, allWords,
     </div>
   );
 }
+
+MatchingGame.static = false;

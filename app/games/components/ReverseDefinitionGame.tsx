@@ -190,3 +190,5 @@ export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onRe
     </div>
   );
 }
+
+ReverseDefinitionGame.static = false;

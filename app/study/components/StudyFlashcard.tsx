@@ -427,3 +427,5 @@ export function StudyFlashcard({
     </section>
   );
 }
+
+StudyFlashcard.static = false;

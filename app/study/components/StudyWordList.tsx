@@ -63,3 +63,5 @@ export function StudyWordList({ words, currentIndex, onSelectWord }: StudyWordLi
     </section>
   );
 }
+
+StudyWordList.static = false;

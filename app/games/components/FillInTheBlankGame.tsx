@@ -190,3 +190,5 @@ export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResul
     </div>
   );
 }
+
+FillInTheBlankGame.static = false;

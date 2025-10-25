@@ -74,3 +74,5 @@ export function StudyControls({
     </div>
   );
 }
+
+StudyControls.static = false;

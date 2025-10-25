@@ -338,3 +338,5 @@ export function WordScrambleGame({ weeklyWords, allWords, onResult }: BaseGamePr
     </div>
   );
 }
+
+WordScrambleGame.static = false;
