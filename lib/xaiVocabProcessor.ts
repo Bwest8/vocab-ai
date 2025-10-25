@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { jsonrepair } from "jsonrepair";
 import OpenAI from "openai";
 
 // =============================================================================
@@ -32,9 +33,10 @@ const VocabWordSchema = z.object({
     z.object({
       WORD: z.string(),
       DEFINITION: z.string(),
-      TEACHER_DEFINITION: z.string(),
-      PRONUNCIATION: z.string(),
-      PART_OF_SPEECH: z.string(),
+      // These are encouraged but may be missing; accept as optional to avoid failing the whole batch
+      TEACHER_DEFINITION: z.string().optional(),
+      PRONUNCIATION: z.string().optional(),
+      PART_OF_SPEECH: z.string().optional(),
       EXAMPLES: z
         .array(
           z.object({
@@ -157,9 +159,15 @@ export async function processVocabularyWords(
   try {
     structured = JSON.parse(cleanedText);
   } catch (parseError) {
-    console.error("JSON parse error:", parseError);
-    console.error("Cleaned text that failed to parse:", cleanedText);
-    throw new Error("Model returned invalid JSON.");
+    console.warn("JSON parse failed, attempting jsonrepair...", parseError);
+    try {
+      const repaired = jsonrepair(cleanedText);
+      structured = JSON.parse(repaired);
+    } catch (repairError) {
+      console.error("jsonrepair also failed:", repairError);
+      console.error("Cleaned text that failed to parse:", cleanedText);
+      throw new Error("Model returned invalid JSON.");
+    }
   }
 
   const parsed = VocabWordSchema.safeParse(structured);

@@ -173,6 +173,8 @@ export function useStudySession(): UseStudySessionResult {
   const currentMastery = toMasteryLevel(currentProgress?.masteryLevel);
   const isGeneratingSelectedExample = selectedExample ? generatingExampleIds.has(selectedExample.id) : false;
 
+  // Only reset modal/generation state when the CURRENT WORD changes (by id),
+  // not when its nested fields update (e.g., imageUrl after generation).
   useEffect(() => {
     if (!currentWord) {
       setShowImageModal(false);
@@ -184,12 +186,13 @@ export function useStudySession(): UseStudySessionResult {
       return;
     }
 
+    // Reset selection and transient state on word change
     setSelectedExampleIndex(0);
     setImageGenerationError(null);
     setImageGenerationNotice(null);
     setGeneratingExampleIds(new Set());
     setGenerationQueue([]);
-  }, [currentWord]);
+  }, [currentWord?.id]);
 
   useEffect(() => {
     if (!showImageModal) return;
