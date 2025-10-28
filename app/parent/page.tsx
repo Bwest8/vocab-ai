@@ -190,11 +190,25 @@ export default function ParentDashboardPage() {
           </div>
         </section>
 
-        {progress.error && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-700 shadow-md">
-            {progress.error}
+        <section className="rounded-2xl border border-slate-200 bg-white/90 shadow-lg p-5 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold text-slate-900 mb-1">Vocabulary Sets</h2>
+          <p className="text-sm text-slate-600 mb-6">Print matching activities for any vocabulary set</p>
+          
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {vocabSets.map((set) => (
+              <div key={set.id} className="rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 p-4">
+                <h3 className="text-sm font-bold text-slate-900 mb-2">{set.name}</h3>
+                <p className="text-xs text-slate-600 mb-4">{set.grade || 'No grade'}</p>
+                <button
+                  onClick={() => window.open(`/parent/print-matching/${set.id}`, '_blank')}
+                  className="w-full px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold shadow-sm transition hover:bg-blue-700"
+                >
+                  🖨️ Print Matching
+                </button>
+              </div>
+            ))}
           </div>
-        )}
+        </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white/90 shadow-lg p-5 md:p-6">
           <h2 className="text-lg md:text-xl font-bold text-slate-900 mb-3">How to help at home</h2>
