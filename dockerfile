@@ -30,8 +30,8 @@ ENV CI=true
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build the Next.js app (Turbopack optional)
-RUN npm run build -- --turbopack
+# Build the Next.js app
+RUN npm run build
 
 # ===========================
 # 3️⃣ Runtime stage (lightweight)
