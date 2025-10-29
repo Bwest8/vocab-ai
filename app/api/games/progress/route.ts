@@ -103,41 +103,42 @@ export async function POST(request: Request) {
         },
       });
 
-      let progressRecord = await tx.gameModeProgress.findUnique({
-        where: {
-          profileId_vocabSetId_mode: {
-            profileId: profile.id,
-            vocabSetId,
-            mode,
-          },
+      const progressWhere = {
+        profileId_vocabSetId_mode: {
+          profileId: profile.id,
+          vocabSetId,
+          mode,
         },
+      } as const;
+
+      const progressUpdateData: Prisma.GameModeProgressUpdateInput = {
+        attempted: { increment: 1 },
+        lastPlayedAt: now,
+      };
+
+      if (isCorrect) {
+        progressUpdateData.correct = { increment: 1 };
+      }
+
+      let progressRecord = await tx.gameModeProgress.upsert({
+        where: progressWhere,
+        create: {
+          profileId: profile.id,
+          vocabSetId,
+          mode,
+          attempted: 1,
+          correct: isCorrect ? 1 : 0,
+          lastPlayedAt: now,
+          completedAt: isCorrect && 1 >= COMPLETION_THRESHOLD ? now : null,
+        },
+        update: progressUpdateData,
       });
 
-      if (!progressRecord) {
-        const initialCorrect = isCorrect ? 1 : 0;
-        progressRecord = await tx.gameModeProgress.create({
-          data: {
-            profileId: profile.id,
-            vocabSetId,
-            mode,
-            attempted: 1,
-            correct: initialCorrect,
-            lastPlayedAt: now,
-            completedAt: initialCorrect >= COMPLETION_THRESHOLD ? now : null,
-          },
-        });
-      } else {
-        const nextAttempted = progressRecord.attempted + 1;
-        const nextCorrect = progressRecord.correct + (isCorrect ? 1 : 0);
-        const completedAt = progressRecord.completedAt ?? (isCorrect && nextCorrect >= COMPLETION_THRESHOLD ? now : null);
-
+      if (!progressRecord.completedAt && progressRecord.correct >= COMPLETION_THRESHOLD) {
         progressRecord = await tx.gameModeProgress.update({
           where: { id: progressRecord.id },
           data: {
-            attempted: nextAttempted,
-            correct: nextCorrect,
-            lastPlayedAt: now,
-            completedAt,
+            completedAt: now,
           },
         });
       }
@@ -145,18 +146,17 @@ export async function POST(request: Request) {
       // Optionally record a game attempt row (word-level granularity)
       // and update StudyProgress for the word if provided.
       if (wordId) {
-        // Insert attempt record
-        await tx.$executeRawUnsafe(
-          `INSERT INTO game_attempts (profile_id, vocab_set_id, word_id, mode, correct, points_awarded, time_remaining, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-          profile.id,
-          vocabSetId,
-          wordId,
-          mode,
-          isCorrect,
-          pointsAwarded,
-          body.timeRemaining ?? null,
-        );
+        await tx.gameAttempt.create({
+          data: {
+            profileId: profile.id,
+            vocabSetId,
+            wordId,
+            mode,
+            correct: isCorrect,
+            pointsAwarded,
+            timeRemaining: body.timeRemaining ?? null,
+          },
+        });
 
         // Upsert study progress (mirrors /api/progress logic, userId is null by design)
         const existing = await tx.studyProgress.findFirst({ where: { wordId, userId: null } });

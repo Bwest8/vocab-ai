@@ -5,6 +5,7 @@ import Header from "../components/Header";
 import type { GameMode } from "@/lib/types";
 import { useGamesSession } from "@/lib/hooks/useGamesSession";
 import { useGameProgress } from "@/lib/hooks/useGameProgress";
+import { useWordProgress } from "@/lib/hooks/useWordProgress";
 
 const MODE_LABELS: Record<GameMode, string> = {
   matching: "Matching",
@@ -42,14 +43,54 @@ export default function ParentDashboardPage() {
   } = useGamesSession();
 
   const progress = useGameProgress(selectedSetId || null);
+  const wordProgress = useWordProgress(selectedSetId || null);
   const [isResetting, setIsResetting] = useState(false);
 
+  const completedModesCount = progress.completedModes.size;
+
   const completionRate = useMemo(() => {
-    if (progress.questionsAttempted === 0) {
+    if (MODE_ORDER.length === 0) {
       return 0;
     }
-    return Math.round((progress.questionsCorrect / progress.questionsAttempted) * 100);
-  }, [progress.questionsAttempted, progress.questionsCorrect]);
+    return Math.round((completedModesCount / MODE_ORDER.length) * 100);
+  }, [completedModesCount]);
+
+  const getMasteryColor = (masteryLevel: number, accuracy: number) => {
+    if (masteryLevel === 0 || accuracy === 0) {
+      return {
+        bg: "bg-slate-100",
+        border: "border-slate-300",
+        text: "text-slate-700",
+        badge: "bg-slate-400 text-white",
+        label: "Not Started"
+      };
+    }
+    if (masteryLevel <= 2 || accuracy < 60) {
+      return {
+        bg: "bg-rose-50",
+        border: "border-rose-300",
+        text: "text-rose-900",
+        badge: "bg-rose-600 text-white",
+        label: "Needs Practice"
+      };
+    }
+    if (masteryLevel <= 3 || accuracy < 80) {
+      return {
+        bg: "bg-amber-50",
+        border: "border-amber-300",
+        text: "text-amber-900",
+        badge: "bg-amber-600 text-white",
+        label: "Developing"
+      };
+    }
+    return {
+      bg: "bg-emerald-50",
+      border: "border-emerald-300",
+      text: "text-emerald-900",
+      badge: "bg-emerald-600 text-white",
+      label: "Mastered"
+    };
+  };
 
   const handleResetProgress = async () => {
     if (!selectedSetId || !confirm(`Are you sure you want to reset all weekly practice progress for "${selectedSetName}"? This cannot be undone.`)) {
@@ -130,7 +171,7 @@ export default function ParentDashboardPage() {
             <div className="rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 px-5 py-4">
               <dt className="text-xs uppercase tracking-wide text-amber-700 font-semibold">Completion</dt>
               <dd className="mt-2 text-3xl font-bold text-amber-600">{completionRate}%</dd>
-              <p className="mt-1 text-xs text-amber-600">Modes completed: {progress.completedModes.size}/6.</p>
+              <p className="mt-1 text-xs text-amber-600">Modes completed: {completedModesCount}/6.</p>
             </div>
           </dl>
         </section>
@@ -191,6 +232,63 @@ export default function ParentDashboardPage() {
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white/90 shadow-lg p-5 md:p-6">
+          <div className="flex flex-col gap-1 mb-6">
+            <h2 className="text-lg md:text-xl font-bold text-slate-900">Word-by-Word Progress</h2>
+            <p className="text-sm text-slate-600">{selectedSetName || "Select a vocabulary set"}</p>
+            <p className="text-sm text-slate-500">Focus on words marked "Needs Practice" or "Developing" for the biggest improvement.</p>
+          </div>
+
+          {wordProgress.isLoading ? (
+            <div className="text-center py-8 text-slate-600">Loading word progress...</div>
+          ) : wordProgress.error ? (
+            <div className="text-center py-8 text-rose-600">Error: {wordProgress.error}</div>
+          ) : wordProgress.words.length === 0 ? (
+            <div className="text-center py-8 text-slate-600">No words found. Select a vocabulary set to see progress.</div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {wordProgress.words.map((word) => {
+                const colors = getMasteryColor(word.masteryLevel, word.accuracy);
+                return (
+                  <div
+                    key={word.wordId}
+                    className={`rounded-xl border p-4 transition-all shadow-sm ${colors.bg} ${colors.border}`}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex-1">
+                        <h3 className={`text-base font-bold ${colors.text}`}>{word.word}</h3>
+                        <p className="text-xs text-slate-600 mt-1 line-clamp-2">{word.definition}</p>
+                      </div>
+                      <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-bold whitespace-nowrap ${colors.badge}`}>
+                        {colors.label}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-4 text-xs text-slate-700">
+                      <div className="flex flex-col">
+                        <span className="text-slate-500">Mastery</span>
+                        <span className={`font-bold ${colors.text}`}>{word.masteryLevel}/5</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-slate-500">Accuracy</span>
+                        <span className={`font-bold ${colors.text}`}>{word.accuracy}%</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-slate-500">Attempts</span>
+                        <span className="font-bold text-slate-900">{word.totalAttempts}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-slate-500">Correct</span>
+                        <span className="font-bold text-emerald-700">{word.correctCount}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white/90 shadow-lg p-5 md:p-6">
           <h2 className="text-lg md:text-xl font-bold text-slate-900 mb-1">Vocabulary Sets</h2>
           <p className="text-sm text-slate-600 mb-6">Print matching activities for any vocabulary set</p>
           
@@ -214,6 +312,7 @@ export default function ParentDashboardPage() {
           <h2 className="text-lg md:text-xl font-bold text-slate-900 mb-3">How to help at home</h2>
           <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
             <li>Ask for a quick demo of today&apos;s game to celebrate progress and reinforce confidence.</li>
+            <li>Focus practice time on words marked "Needs Practice" or "Developing" in the Word-by-Word Progress section above.</li>
             <li>Replay any mode that isn&apos;t completed yet—especially fill-in-the-blank and context clues for deeper mastery.</li>
             <li>Use the Manage tab to print or review the twelve words for the week offline.</li>
           </ul>
