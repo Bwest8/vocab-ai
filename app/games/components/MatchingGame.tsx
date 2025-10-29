@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { WordWithRelations } from "@/lib/study/types";
 import type { GameResult } from "@/lib/hooks/useGameProgress";
+import {
+  GameHeader,
+  GameContainer,
+  GameIntro,
+  GameResults,
+} from "./shared";
 
 interface BaseGameProps {
   weeklyWords: WordWithRelations[];
@@ -16,7 +23,16 @@ interface GameCard {
   content: string;
   type: "word" | "definition";
   matchId: string;
+  wordId: string;
   isMatched: boolean;
+}
+
+interface GameSession {
+  cards: GameCard[];
+  matches: number;
+  attempts: number;
+  totalPairs: number;
+  pointsEarned: number;
 }
 
 const shuffle = <T,>(array: T[]) => {
@@ -28,86 +44,97 @@ const shuffle = <T,>(array: T[]) => {
   return copy;
 };
 
+type GameState = "intro" | "playing" | "results";
+
 export function MatchingGame({ weeklyWords, reviewWords: _reviewWords, allWords, onResult }: BaseGameProps) {
   void _reviewWords;
-  const gameWords = weeklyWords.length > 0 ? weeklyWords : allWords.slice(0, 12); // Use weekly words or first 12 from all words
+  const router = useRouter();
+  const [gameState, setGameState] = useState<GameState>("intro");
+  const [session, setSession] = useState<GameSession | null>(null);
+  const [selectedCards, setSelectedCards] = useState<string[]>([]);
 
-  const buildCards = () => {
-    const gameCards: GameCard[] = [];
+  const gameWords = weeklyWords.length > 0 ? weeklyWords.slice(0, 12) : allWords.slice(0, 12);
+
+  const buildCards = (): GameCard[] => {
+    const cards: GameCard[] = [];
 
     gameWords.forEach((word, index) => {
-      gameCards.push({
+      cards.push({
         id: `word-${index}`,
         content: word.word,
         type: "word",
         matchId: `match-${index}`,
+        wordId: word.id,
         isMatched: false,
       });
-      gameCards.push({
+      cards.push({
         id: `def-${index}`,
         content: word.teacherDefinition || word.definition,
         type: "definition",
         matchId: `match-${index}`,
+        wordId: word.id,
         isMatched: false,
       });
     });
 
-    return shuffle(gameCards);
+    return shuffle(cards);
   };
 
-  const [cards, setCards] = useState<GameCard[]>(() => buildCards());
-  const [selectedCards, setSelectedCards] = useState<string[]>([]);
-  const [matches, setMatches] = useState(0);
-  const [attempts, setAttempts] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
-
-  const initializeGame = () => {
-    setCards(buildCards());
+  const startGame = () => {
+    setSession({
+      cards: buildCards(),
+      matches: 0,
+      attempts: 0,
+      totalPairs: gameWords.length,
+      pointsEarned: 0,
+    });
     setSelectedCards([]);
-    setMatches(0);
-    setAttempts(0);
-    setIsComplete(false);
+    setGameState("playing");
   };
 
   const handleCardClick = (cardId: string) => {
-    if (selectedCards.includes(cardId)) return;
-    if (selectedCards.length >= 2) return;
+    if (!session || selectedCards.includes(cardId) || selectedCards.length >= 2) return;
 
-    const card = cards.find((c) => c.id === cardId);
+    const card = session.cards.find((c) => c.id === cardId);
     if (!card || card.isMatched) return;
 
     const newSelected = [...selectedCards, cardId];
     setSelectedCards(newSelected);
 
     if (newSelected.length === 2) {
-      setAttempts(attempts + 1);
-      const card1 = cards.find((c) => c.id === newSelected[0]);
-      const card2 = cards.find((c) => c.id === newSelected[1]);
+      const card1 = session.cards.find((c) => c.id === newSelected[0]);
+      const card2 = session.cards.find((c) => c.id === newSelected[1]);
+
+      const newAttempts = session.attempts + 1;
 
       if (card1 && card2 && card1.matchId === card2.matchId) {
         // Match found!
-        // Derive the word index from matchId (format: "match-<index>") and map to the underlying word id
-        let matchedWordId: string | undefined;
-        const parts = (card1.matchId || '').split('-');
-        const idx = parts.length === 2 ? parseInt(parts[1], 10) : NaN;
-        if (Number.isFinite(idx) && idx >= 0 && idx < gameWords.length) {
-          matchedWordId = gameWords[idx].id;
-        }
-
+        const points = 10;
         onResult({
           mode: "matching",
           correct: true,
-          pointsAwarded: 10,
-          wordId: matchedWordId,
+          pointsAwarded: points,
+          wordId: card1.wordId,
         });
-        
+
         setTimeout(() => {
-          setCards(cards.map((c) => (c.id === card1.id || c.id === card2.id ? { ...c, isMatched: true } : c)));
-          setMatches(matches + 1);
+          const newCards = session.cards.map((c) =>
+            c.id === card1.id || c.id === card2.id ? { ...c, isMatched: true } : c
+          );
+          const newMatches = session.matches + 1;
+
+          setSession({
+            ...session,
+            cards: newCards,
+            matches: newMatches,
+            attempts: newAttempts,
+            pointsEarned: session.pointsEarned + points,
+          });
           setSelectedCards([]);
 
-          if (matches + 1 === gameWords.length) {
-            setIsComplete(true);
+          if (newMatches === session.totalPairs) {
+            // Game complete
+            setTimeout(() => setGameState("results"), 500);
           }
         }, 500);
       } else {
@@ -117,7 +144,12 @@ export function MatchingGame({ weeklyWords, reviewWords: _reviewWords, allWords,
           correct: false,
           pointsAwarded: 0,
         });
-        
+
+        setSession({
+          ...session,
+          attempts: newAttempts,
+        });
+
         setTimeout(() => {
           setSelectedCards([]);
         }, 1000);
@@ -125,102 +157,135 @@ export function MatchingGame({ weeklyWords, reviewWords: _reviewWords, allWords,
     }
   };
 
+  const playAgain = () => {
+    setSession(null);
+    setSelectedCards([]);
+    setGameState("intro");
+  };
+
   if (gameWords.length === 0) {
     return (
-      <div className="rounded-2xl bg-white/80 p-6 text-center text-sm text-slate-500">
-        Add some words to this set to unlock the matching game!
-      </div>
+      <GameContainer>
+        <p className="rounded-2xl bg-white/80 p-6 text-center text-lg text-slate-500">
+          Add some words to this set to unlock the games!
+        </p>
+      </GameContainer>
     );
   }
 
-  return (
-    <div className="rounded-2xl border border-pink-100 bg-white/95 p-4 md:p-5 shadow-sm">
-      {/* Progress Header */}
-      <div className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-pink-50/80 px-4 py-3 border border-pink-200">
-        <div className="flex items-center gap-3">
-          <div className="text-2xl">🧩</div>
-          <div>
-            <h2 className="text-base md:text-lg font-bold text-pink-900 leading-tight">Matching Game</h2>
-            <p className="text-xs md:text-sm text-pink-600 leading-tight">Match words with definitions</p>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-1.5">
-          <div className="flex gap-1">
-            {Array.from({ length: gameWords.length }).map((_, idx) => (
-              <div
-                key={idx}
-                className={`h-1.5 w-1.5 rounded-full transition-all ${
-                  idx < matches
-                    ? "bg-pink-600"
-                    : "bg-pink-200"
-                }`}
-              />
-            ))}
-          </div>
-          <p className="text-[11px] font-semibold text-pink-700">
-            {matches}/{gameWords.length} matched
-          </p>
-        </div>
-      </div>
+  if (gameState === "intro") {
+    return (
+      <GameContainer>
+        <GameIntro
+          icon="🧩"
+          title="Matching Game"
+          description="Match vocabulary words with their definitions by clicking pairs of cards. Find all the matches to complete the game!"
+          objective="Strengthen word-definition connections through memory and pattern recognition."
+          difficulty="Easy"
+          questionsCount={gameWords.length}
+          onStart={startGame}
+          color="pink"
+        />
+      </GameContainer>
+    );
+  }
 
-      {/* Stats */}
-      <div className="mb-3 flex items-center justify-center gap-6 text-center">
-        <div>
-          <div className="text-2xl font-bold text-pink-600 leading-none">{matches}</div>
-          <div className="text-xs text-muted-foreground">Matches</div>
+  if (gameState === "results" && session) {
+    const percentage = (session.matches / session.totalPairs) * 100;
+    const encouragementLevel = session.attempts <= session.totalPairs * 1.5 ? "excellent" : session.attempts <= session.totalPairs * 2 ? "good" : "needs-practice";
+
+    return (
+      <GameContainer>
+        <GameResults
+          icon="🧩"
+          title="Matching Game"
+          score={session.matches}
+          totalQuestions={session.totalPairs}
+          pointsEarned={session.pointsEarned}
+          wordsToReview={gameWords.map((word) => ({
+            word: word.word,
+            definition: word.teacherDefinition || word.definition,
+            wasCorrect: true, // All matched pairs are correct
+          }))}
+          onPlayAgain={playAgain}
+          onBackToGames={() => router.push("/games")}
+          color="pink"
+          encouragementLevel={encouragementLevel}
+        />
+      </GameContainer>
+    );
+  }
+
+  if (!session) return null;
+
+  return (
+    <GameContainer>
+      <GameHeader
+        icon="🧩"
+        title="Matching Game"
+        subtitle={`${session.matches} of ${session.totalPairs} matched`}
+        color="pink"
+        showProgress={false}
+        showBack={false}
+      />
+
+      {/* Stats Display */}
+      <div className="rounded-2xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-rose-50 p-6">
+        <div className="flex items-center justify-center gap-8 text-center">
+          <div>
+            <div className="text-4xl font-extrabold text-pink-600">{session.matches}</div>
+            <div className="text-sm font-semibold text-pink-700">Matches</div>
+          </div>
+          <div>
+            <div className="text-4xl font-extrabold text-rose-600">{session.attempts}</div>
+            <div className="text-sm font-semibold text-rose-700">Attempts</div>
+          </div>
         </div>
-        <div>
-          <div className="text-2xl font-bold text-pink-600 leading-none">{attempts}</div>
-          <div className="text-xs text-muted-foreground">Attempts</div>
+
+        {/* Progress dots */}
+        <div className="mt-4 flex items-center justify-center gap-2">
+          {Array.from({ length: session.totalPairs }).map((_, idx) => (
+            <div
+              key={idx}
+              className={`h-3 w-3 rounded-full transition-all ${
+                idx < session.matches ? "bg-pink-600 scale-110" : "bg-pink-200"
+              }`}
+            />
+          ))}
         </div>
       </div>
 
       {/* Game Board */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
-        {cards.map((card) => (
-          <button
-            key={card.id}
-            type="button"
-            className={`rounded-xl border p-3 md:p-4 text-center transition-all hover:scale-[1.02] min-h-[90px] md:min-h-[110px] ${
-              card.isMatched
-                ? "bg-pink-100 border-pink-400 opacity-60"
-                : selectedCards.includes(card.id)
-                  ? "bg-pink-200 border-pink-500 scale-105"
-                  : "bg-white border-pink-200 hover:border-pink-400"
-            }`}
-            onClick={() => handleCardClick(card.id)}
-          >
-            <p
-              className={`font-semibold leading-relaxed ${
-                card.type === "word" ? "text-base md:text-lg text-pink-700" : "text-[13px] md:text-sm text-slate-700"
-              }`}
-            >
-              {card.content}
-            </p>
-          </button>
-        ))}
-      </div>
-
-      {/* Completion Message */}
-      {isComplete && (
-        <div className="mt-6">
-          <div className="rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white p-5 text-center">
-            <div className="text-3xl mb-1.5">🎉</div>
-            <h3 className="text-lg font-bold mb-1">Congratulations!</h3>
-            <p className="text-base mb-3">
-              You matched all {matches} pairs in {attempts} attempts!
-            </p>
+      <div className="rounded-2xl border border-white/80 bg-white/90 p-6 shadow-xl backdrop-blur-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          {session.cards.map((card) => (
             <button
+              key={card.id}
               type="button"
-              onClick={initializeGame}
-              className="rounded-full bg-white text-pink-600 px-5 py-1.5 font-semibold hover:bg-pink-50 transition"
+              className={`rounded-2xl border-2 p-4 md:p-5 text-center transition-all min-h-[100px] md:min-h-[120px] flex items-center justify-center ${
+                card.isMatched
+                  ? "bg-emerald-100 border-emerald-400 opacity-60"
+                  : selectedCards.includes(card.id)
+                    ? "bg-pink-200 border-pink-500 scale-105 shadow-lg"
+                    : "bg-white border-pink-300 hover:border-pink-500 hover:bg-pink-50 active:scale-95 shadow-sm"
+              }`}
+              onClick={() => handleCardClick(card.id)}
+              disabled={card.isMatched}
             >
-              Play Again
+              <p
+                className={`font-bold leading-snug ${
+                  card.type === "word"
+                    ? "text-lg md:text-xl text-pink-700"
+                    : "text-sm md:text-base text-slate-700"
+                }`}
+              >
+                {card.content}
+              </p>
             </button>
-          </div>
+          ))}
         </div>
-      )}
-    </div>
+      </div>
+    </GameContainer>
   );
 }
 

@@ -97,21 +97,9 @@ export default function GameModePage() {
         </div>
       </div>
 
-      <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white pb-3 pt-1 md:pt-2">
-        <div className="mx-auto w-full max-w-5xl px-4 sm:px-5 lg:px-6">
-          {errorMessage && (
-            <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
-              {errorMessage}
-            </div>
-          )}
-
-          {progress.error && (
-            <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              {progress.error}
-            </div>
-          )}
-
-          {/* Game area: render directly to maximize space */}
+      <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white landscape:h-[100vh] landscape:overflow-hidden">
+        {/* Game area - full height in landscape */}
+        <div className="h-full landscape:flex landscape:flex-col">
           {modeComponent}
         </div>
       </div>

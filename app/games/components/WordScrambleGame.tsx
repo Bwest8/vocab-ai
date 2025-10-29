@@ -1,9 +1,15 @@
 "use client";
 
 import { useMemo, useState, type KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
 import type { WordWithRelations } from "@/lib/study/types";
 import type { GameResult } from "@/lib/hooks/useGameProgress";
-import type { GameMode } from "@/lib/types";
+import {
+  GameHeader,
+  GameContainer,
+  GameIntro,
+  GameResults,
+} from "./shared";
 
 interface BaseGameProps {
   weeklyWords: WordWithRelations[];
@@ -12,8 +18,16 @@ interface BaseGameProps {
   onResult: (result: GameResult) => void;
 }
 
-const MODE: GameMode = "word-scramble";
-const POINTS = 11; // between definition-match (10) and reverse-definition (12)
+interface GameSession {
+  words: WordWithRelations[];
+  currentIndex: number;
+  score: number;
+  pointsEarned: number;
+  results: Array<{ wordId: string; word: string; definition: string; correct: boolean }>;
+}
+
+const QUESTIONS_PER_SESSION = 10;
+const BASE_POINTS = 11;
 
 const shuffle = <T,>(array: T[]) => {
   const copy = [...array];
@@ -36,50 +50,29 @@ const generateScramble = (word: string): string => {
   return scrambledWord;
 };
 
-export function WordScrambleGame({ weeklyWords, allWords, onResult }: BaseGameProps) {
-  const [words, setWords] = useState<WordWithRelations[]>(() => {
-    const pool = weeklyWords.length > 0 ? weeklyWords : allWords.slice(0, 10);
-    return shuffle(pool);
-  });
+type GameState = "intro" | "playing" | "results";
 
-  const [index, setIndex] = useState(0);
-  const initialWord = words[0];
-  const [scrambled, setScrambled] = useState<string>(() => generateScramble(initialWord?.word ?? ""));
+export function WordScrambleGame({ weeklyWords, allWords, onResult }: BaseGameProps) {
+  const router = useRouter();
+  const [gameState, setGameState] = useState<GameState>("intro");
+  const [session, setSession] = useState<GameSession | null>(null);
+
+  // Current word state
+  const [scrambled, setScrambled] = useState<string>("");
   const [answer, setAnswer] = useState<string>("");
-  // Track which scrambled letters have been used (by index)
   const [usedIndices, setUsedIndices] = useState<number[]>([]);
-  const [hintStep, setHintStep] = useState(0); // 0 none, 1 masked def, 2 masked example
+  const [hintStep, setHintStep] = useState(0);
   const [revealFirst, setRevealFirst] = useState(false);
   const [revealLast, setRevealLast] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-  const [score, setScore] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
   const [animatingIdx, setAnimatingIdx] = useState<number | null>(null);
 
-  const current = words[index];
+  const gameWords = useMemo(() => {
+    const pool = weeklyWords.length > 0 ? weeklyWords : allWords.slice(0, QUESTIONS_PER_SESSION);
+    return shuffle(pool).slice(0, QUESTIONS_PER_SESSION);
+  }, [weeklyWords, allWords]);
 
-  const prepareWord = (word: WordWithRelations | undefined) => {
-    if (!word) {
-      setScrambled("");
-      setAnswer("");
-      setUsedIndices([]);
-      setHintStep(0);
-      setRevealFirst(false);
-      setRevealLast(false);
-      setIsCorrect(null);
-      setAnimatingIdx(null);
-      return;
-    }
-
-    setScrambled(generateScramble(word.word));
-    setAnswer("");
-    setUsedIndices([]);
-    setHintStep(0);
-    setRevealFirst(false);
-    setRevealLast(false);
-    setIsCorrect(null);
-    setAnimatingIdx(null);
-  };
+  const current = session?.words[session.currentIndex];
 
   const pattern = useMemo(() => {
     if (!current) return "";
@@ -93,63 +86,119 @@ export function WordScrambleGame({ weeklyWords, allWords, onResult }: BaseGamePr
       .join(" ");
   }, [current, revealFirst, revealLast]);
 
+  const startGame = () => {
+    const words = gameWords;
+    setSession({
+      words,
+      currentIndex: 0,
+      score: 0,
+      pointsEarned: 0,
+      results: [],
+    });
+    setScrambled(generateScramble(words[0]?.word ?? ""));
+    setAnswer("");
+    setUsedIndices([]);
+    setHintStep(0);
+    setRevealFirst(false);
+    setRevealLast(false);
+    setIsCorrect(null);
+    setAnimatingIdx(null);
+    setGameState("playing");
+  };
+
+  const prepareNextWord = (nextIndex: number) => {
+    if (!session) return;
+
+    const nextWord = session.words[nextIndex];
+    setScrambled(generateScramble(nextWord?.word ?? ""));
+    setAnswer("");
+    setUsedIndices([]);
+    setHintStep(0);
+    setRevealFirst(false);
+    setRevealLast(false);
+    setIsCorrect(null);
+    setAnimatingIdx(null);
+  };
+
   const submit = () => {
-    if (!current) return;
+    if (!current || !session) return;
+
     const correct = answer.trim().toLowerCase() === current.word.toLowerCase();
     setIsCorrect(correct);
-    // Simple penalty system for hints
+
+    // Penalty system for hints
     const penalty = (hintStep >= 1 ? 2 : 0) + (hintStep >= 2 ? 1 : 0) + (revealFirst ? 1 : 0) + (revealLast ? 1 : 0);
-    const awarded = Math.max(1, POINTS - penalty);
-  onResult({ mode: MODE, correct, pointsAwarded: correct ? awarded : 0, wordId: current.id });
+    const awarded = Math.max(1, BASE_POINTS - penalty);
+
+    onResult({
+      mode: "word-scramble",
+      correct,
+      pointsAwarded: correct ? awarded : 0,
+      wordId: current.id,
+    });
+
+    const newResults = [
+      ...session.results,
+      {
+        wordId: current.id,
+        word: current.word,
+        definition: current.teacherDefinition || current.definition,
+        correct,
+      },
+    ];
+
+    const newSession = {
+      ...session,
+      results: newResults,
+      score: session.score + (correct ? 1 : 0),
+      pointsEarned: session.pointsEarned + (correct ? awarded : 0),
+    };
 
     if (correct) {
-      setScore((s) => s + 1);
       setTimeout(() => {
-        if (index < words.length - 1) {
-          const nextIndex = index + 1;
-          setIndex(nextIndex);
-          prepareWord(words[nextIndex]);
+        if (session.currentIndex < session.words.length - 1) {
+          const nextIndex = session.currentIndex + 1;
+          setSession({ ...newSession, currentIndex: nextIndex });
+          prepareNextWord(nextIndex);
         } else {
-          setIsComplete(true);
+          setSession(newSession);
+          setGameState("results");
         }
-      }, 900);
+      }, 1500);
+    } else {
+      setSession(newSession);
     }
   };
-  // Handle clicking a letter box to add to answer
-  function handleLetterClick(idx: number) {
+
+  const handleLetterClick = (idx: number) => {
     if (usedIndices.includes(idx) || isCorrect === true) return;
     setAnswer((prev) => prev + scrambled[idx]);
     setUsedIndices((prev) => [...prev, idx]);
     setAnimatingIdx(idx);
-    setTimeout(() => setAnimatingIdx(null), 220); // Animation duration
-  }
+    setTimeout(() => setAnimatingIdx(null), 220);
+  };
 
-  // Handle removing last letter (backspace)
-  function handleRemoveLast() {
+  const handleRemoveLast = () => {
     if (answer.length === 0 || isCorrect === true) return;
-    // Remove last used index
     setUsedIndices((prev) => prev.slice(0, -1));
     setAnswer((prev) => prev.slice(0, -1));
-  }
+  };
 
   const skip = () => {
-    if (index < words.length - 1) {
-      const nextIndex = index + 1;
-      setIndex(nextIndex);
-      prepareWord(words[nextIndex]);
+    if (!session) return;
+
+    if (session.currentIndex < session.words.length - 1) {
+      const nextIndex = session.currentIndex + 1;
+      setSession({ ...session, currentIndex: nextIndex });
+      prepareNextWord(nextIndex);
     } else {
-      setIsComplete(true);
+      setGameState("results");
     }
   };
 
-  const reset = () => {
-    const pool = weeklyWords.length > 0 ? weeklyWords : allWords.slice(0, 10);
-    const nextWords = shuffle(pool);
-    setWords(nextWords);
-    setIndex(0);
-    setScore(0);
-    setIsComplete(false);
-    prepareWord(nextWords[0]);
+  const playAgain = () => {
+    setSession(null);
+    setGameState("intro");
   };
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -157,42 +206,95 @@ export function WordScrambleGame({ weeklyWords, allWords, onResult }: BaseGamePr
     if (e.key === "Backspace") handleRemoveLast();
   };
 
-  if (words.length === 0 || !current) {
-    return <div className="rounded-2xl bg-white/80 p-6 text-center text-sm text-slate-500">Add some words to this set to unlock the games!</div>;
+  if (gameWords.length === 0) {
+    return (
+      <GameContainer>
+        <p className="rounded-2xl bg-white/80 p-6 text-center text-lg text-slate-500">
+          Add some words to this set to unlock the games!
+        </p>
+      </GameContainer>
+    );
   }
 
+  if (gameState === "intro") {
+    return (
+      <GameContainer>
+        <GameIntro
+          icon="🔤"
+          title="Word Scramble"
+          description="Unscramble the letters to reveal the vocabulary word! Click letters or type your answer. Use hints if you need help."
+          objective="Improve spelling and word recognition by unscrambling vocabulary words."
+          difficulty="Medium"
+          questionsCount={gameWords.length}
+          onStart={startGame}
+          color="blue"
+        />
+      </GameContainer>
+    );
+  }
+
+  if (gameState === "results" && session) {
+    const percentage = (session.score / session.words.length) * 100;
+    const encouragementLevel = percentage >= 80 ? "excellent" : percentage >= 60 ? "good" : "needs-practice";
+
+    return (
+      <GameContainer>
+        <GameResults
+          icon="🔤"
+          title="Word Scramble"
+          score={session.score}
+          totalQuestions={session.words.length}
+          pointsEarned={session.pointsEarned}
+          wordsToReview={session.results.map((r) => ({
+            word: r.word,
+            definition: r.definition,
+            wasCorrect: r.correct,
+          }))}
+          onPlayAgain={playAgain}
+          onBackToGames={() => router.push("/games")}
+          color="blue"
+          encouragementLevel={encouragementLevel}
+        />
+      </GameContainer>
+    );
+  }
+
+  if (!session || !current) return null;
+
   return (
-    <div className="w-full max-w-4xl mx-auto rounded-3xl border-4 border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-8 md:p-12 shadow-xl backdrop-blur-lg min-h-[80svh] flex flex-col justify-center items-center">
-      {/* Playful Header / Controls */}
-      <div className="w-full flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
-        <div className="flex flex-col items-start gap-2">
-          <div className="text-lg md:text-xl font-bold text-indigo-700 tracking-wide">Word <span className="text-indigo-500">{index + 1}</span> of <span className="text-indigo-500">{words.length}</span></div>
-          <div className="flex items-center gap-3">
-            <span className="text-base font-semibold text-purple-600">Score: <span className="text-purple-700">{score}</span></span>
-            <button type="button" onClick={reset} className="rounded-full border-2 border-indigo-300 bg-white px-4 py-1.5 font-bold text-indigo-700 shadow hover:bg-indigo-50 hover:border-indigo-400 transition">New Game</button>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <span className="text-base font-semibold text-slate-500 italic">Vocab Scramble</span>
-        </div>
-      </div>
+    <GameContainer>
+      <GameHeader
+        icon="🔤"
+        title="Word Scramble"
+        subtitle="Unscramble the word"
+        currentQuestion={session.currentIndex + 1}
+        totalQuestions={session.words.length}
+        color="blue"
+        showProgress={true}
+        showBack={false}
+      />
 
-      {/* Definition area - vibrant and engaging */}
-      <div className="w-full mb-6 text-center">
-        <h3 className="text-2xl md:text-3xl font-extrabold mb-2 text-indigo-700 drop-shadow">Unscramble this word</h3>
-        <div className="text-xl md:text-2xl font-bold text-purple-700 mb-2 bg-purple-50 rounded-xl py-2 px-4 inline-block shadow">
+      {/* Definition Card */}
+      <div className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-lg">
+        <p className="text-sm font-bold uppercase tracking-wide text-blue-600">Definition</p>
+        <h3 className="mt-2 text-2xl font-bold text-slate-900">
           {current.teacherDefinition || current.definition}
-        </div>
-        <div className="text-sm md:text-base text-slate-500 flex items-center justify-center gap-4 mt-2">
-          {current.partOfSpeech && <span className="italic">{current.partOfSpeech}</span>}
-          <span>Length: <span className="font-bold text-indigo-600">{current.word.length}</span></span>
-          {(revealFirst || revealLast) && <span className="font-semibold text-slate-700">Pattern: {pattern}</span>}
+        </h3>
+        <div className="mt-3 flex items-center gap-4 text-sm text-slate-600">
+          {current.partOfSpeech && <span className="font-semibold italic">{current.partOfSpeech}</span>}
+          <span>Length: <span className="font-bold text-blue-600">{current.word.length} letters</span></span>
+          {(revealFirst || revealLast) && (
+            <span className="font-bold text-slate-700">Pattern: <span className="font-mono text-blue-600">{pattern}</span></span>
+          )}
         </div>
       </div>
 
-      {/* Scrambled letters - large, spaced, animated */}
-      <div className="w-full flex flex-col items-center mb-6">
-        <div className="flex flex-wrap justify-center gap-4 mb-3">
+      {/* Scrambled Letters */}
+      <div className="rounded-2xl border border-white/80 bg-white/90 p-8 shadow-xl backdrop-blur-sm">
+        <p className="mb-4 text-center text-sm font-bold uppercase tracking-wide text-blue-600">
+          Click letters to build your answer
+        </p>
+        <div className="flex flex-wrap justify-center gap-3 mb-6">
           {scrambled.split("").map((letter, i) => {
             const used = usedIndices.includes(i);
             const animating = animatingIdx === i;
@@ -202,18 +304,38 @@ export function WordScrambleGame({ weeklyWords, allWords, onResult }: BaseGamePr
                 type="button"
                 onClick={() => handleLetterClick(i)}
                 disabled={used || isCorrect === true}
-                className={`w-16 h-16 md:w-20 md:h-20 border-4 rounded-2xl flex items-center justify-center transition-all duration-200 font-extrabold text-3xl md:text-4xl
-                  ${used ? "bg-gray-200 border-gray-300 text-gray-400" : "bg-indigo-100 border-indigo-400 text-indigo-700 hover:bg-indigo-200 hover:border-indigo-500"}
-                  ${isCorrect === true ? "opacity-60" : "cursor-pointer"}
-                  ${animating ? "scale-110 bg-emerald-100 border-emerald-400 shadow-xl" : ""}`}
-                style={{ zIndex: animating ? 2 : 1 }}
+                className={`h-16 w-16 md:h-20 md:w-20 rounded-2xl border-4 font-extrabold text-3xl md:text-4xl transition-all ${
+                  used
+                    ? "border-slate-300 bg-slate-100 text-slate-400"
+                    : animating
+                      ? "scale-110 border-emerald-500 bg-emerald-100 text-emerald-700 shadow-xl"
+                      : "border-blue-400 bg-blue-100 text-blue-700 hover:border-blue-500 hover:bg-blue-200 active:scale-95"
+                }`}
               >
-                <span className={`text-3xl md:text-4xl font-extrabold uppercase ${animating ? "text-emerald-700" : ""}`}>{letter}</span>
+                <span className="uppercase">{letter}</span>
               </button>
             );
           })}
         </div>
-        <div className="flex items-center justify-center gap-3 mt-2">
+
+        {/* Hint Buttons */}
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
+          <button
+            type="button"
+            onClick={() => setRevealFirst(true)}
+            disabled={revealFirst}
+            className="rounded-full border-2 border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm hover:bg-emerald-50 disabled:opacity-50"
+          >
+            Reveal First
+          </button>
+          <button
+            type="button"
+            onClick={() => setRevealLast(true)}
+            disabled={revealLast}
+            className="rounded-full border-2 border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm hover:bg-emerald-50 disabled:opacity-50"
+          >
+            Reveal Last
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -223,119 +345,73 @@ export function WordScrambleGame({ weeklyWords, allWords, onResult }: BaseGamePr
               for (let t = 0; t < 5 && next === scrambled && letters.length > 1; t += 1) {
                 next = shuffle(letters).join("");
               }
-              // Update usedIndices to match new positions
-              const oldPositions = new Map<string, number[]>();
-              scrambled.split("").forEach((letter, idx) => {
-                if (!oldPositions.has(letter)) oldPositions.set(letter, []);
-                oldPositions.get(letter)!.push(idx);
-              });
-              const newPositions = new Map<string, number[]>();
-              next.split("").forEach((letter, idx) => {
-                if (!newPositions.has(letter)) newPositions.set(letter, []);
-                newPositions.get(letter)!.push(idx);
-              });
-              const newUsedIndices: number[] = [];
-              for (const [letter, oldPos] of oldPositions) {
-                const usedForLetter = usedIndices.filter(idx => oldPos.includes(idx)).sort((a, b) => a - b);
-                const newPos = newPositions.get(letter)!;
-                usedForLetter.forEach((_, i) => {
-                  newUsedIndices.push(newPos[i]);
-                });
-              }
               setScrambled(next);
-              setUsedIndices(newUsedIndices);
+              setUsedIndices([]);
+              setAnswer("");
             }}
-            className="rounded-full border-2 border-indigo-300 bg-white px-4 py-2 text-base font-bold text-indigo-700 shadow hover:bg-indigo-50 hover:border-indigo-400 transition"
+            className="rounded-full border-2 border-blue-300 bg-white px-4 py-2 text-sm font-bold text-blue-700 shadow-sm hover:bg-blue-50"
           >
             Reshuffle
           </button>
+        </div>
+
+        {/* Answer Input */}
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Your answer..."
+            value={answer}
+            onChange={(e) => {
+              if (isCorrect === true) return;
+              setAnswer(e.target.value);
+              setUsedIndices([]);
+            }}
+            onKeyDown={onKey}
+            className="h-16 flex-1 rounded-2xl border-4 border-blue-200 bg-white px-6 text-center text-2xl font-bold outline-none transition focus:border-blue-400"
+            disabled={isCorrect === true}
+          />
           <button
             type="button"
-            onClick={() => setRevealFirst(true)}
-            disabled={revealFirst}
-            className="rounded-full border-2 border-emerald-300 bg-white px-4 py-2 text-base font-bold text-emerald-700 shadow hover:bg-emerald-50 hover:border-emerald-400 transition disabled:opacity-60"
+            onClick={handleRemoveLast}
+            disabled={answer.length === 0 || isCorrect === true}
+            className="h-16 w-16 rounded-2xl border-2 border-rose-300 bg-white text-2xl font-bold text-rose-700 shadow-sm hover:bg-rose-50 disabled:opacity-50"
           >
-            Reveal first letter
+            ⌫
+          </button>
+        </div>
+
+        {/* Feedback */}
+        {isCorrect === true && (
+          <div className="mt-4 rounded-2xl border-4 border-emerald-400 bg-emerald-50 p-4 text-center">
+            <p className="text-2xl font-extrabold text-emerald-700">Correct! Excellent work! 🎉</p>
+          </div>
+        )}
+        {isCorrect === false && (
+          <div className="mt-4 rounded-2xl border-4 border-rose-400 bg-rose-50 p-4 text-center">
+            <p className="text-2xl font-extrabold text-rose-600">Not quite. Try again!</p>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="mt-6 grid grid-cols-2 gap-4">
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!answer || isCorrect === true}
+            className="rounded-2xl border-4 border-blue-500 bg-blue-600 py-4 text-xl font-bold text-white shadow-lg transition hover:bg-blue-500 disabled:opacity-50"
+          >
+            Check Answer
           </button>
           <button
             type="button"
-            onClick={() => setRevealLast(true)}
-            disabled={revealLast}
-            className="rounded-full border-2 border-emerald-300 bg-white px-4 py-2 text-base font-bold text-emerald-700 shadow hover:bg-emerald-50 hover:border-emerald-400 transition disabled:opacity-60"
+            onClick={skip}
+            className="rounded-2xl border-4 border-slate-300 bg-white py-4 text-xl font-bold text-slate-700 shadow-lg transition hover:bg-slate-50"
           >
-            Reveal last letter
+            Skip
           </button>
         </div>
       </div>
-
-      {/* Input - show answer and allow backspace, playful */}
-      <div className="w-full flex items-center gap-3 mb-6">
-        <input
-          type="text"
-          placeholder="Type your answer or tap letters..."
-          value={answer}
-          onChange={(e) => {
-            if (isCorrect === true) return;
-            setAnswer(e.target.value);
-            setUsedIndices([]);
-          }}
-          onKeyDown={onKey}
-          className="w-full h-16 md:h-20 rounded-2xl border-4 border-indigo-200 bg-white/90 px-6 text-center text-2xl md:text-3xl font-extrabold outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
-          disabled={isCorrect === true}
-        />
-        <button
-          type="button"
-          onClick={handleRemoveLast}
-          disabled={answer.length === 0 || isCorrect === true}
-          className="rounded-full border-2 border-rose-300 bg-white px-4 py-2 text-xl font-bold text-rose-700 shadow hover:bg-rose-50 hover:border-rose-400 transition disabled:opacity-60"
-        >
-          ⌫
-        </button>
-      </div>
-
-      {/* Feedback - playful and positive */}
-      {isCorrect === true && (
-        <div className="mb-4 rounded-2xl border-4 border-emerald-400 bg-emerald-50 px-6 py-5 text-center shadow-lg">
-          <p className="text-2xl md:text-3xl font-extrabold text-emerald-700">Correct! Great job! 🎉</p>
-        </div>
-      )}
-      {isCorrect === false && (
-        <div className="mb-4 rounded-2xl border-4 border-rose-400 bg-rose-50 px-6 py-5 text-center shadow-lg">
-          <p className="text-2xl md:text-3xl font-extrabold text-rose-600">Not quite. Try again!</p>
-        </div>
-      )}
-
-      {/* Controls - big, friendly buttons */}
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!answer || isCorrect === true}
-          className="rounded-2xl border-4 border-indigo-400 bg-indigo-600 px-6 py-5 text-xl font-extrabold text-white shadow hover:bg-indigo-500 transition disabled:opacity-60"
-        >
-          Check Answer
-        </button>
-        <button
-          type="button"
-          onClick={skip}
-          className="rounded-2xl border-4 border-slate-200 bg-white px-6 py-5 text-xl font-extrabold text-slate-700 shadow hover:border-slate-300 transition"
-        >
-          Skip
-        </button>
-      </div>
-
-      {/* Completion - fun celebration */}
-      {isComplete && (
-        <div className="mt-8 rounded-3xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-10 text-center shadow-xl">
-          <div className="text-5xl mb-2">🏆</div>
-          <h3 className="text-3xl font-extrabold mb-2">Game Complete!</h3>
-          <p className="text-xl mb-4">You got <span className="font-bold">{score}</span> out of <span className="font-bold">{words.length}</span> words correct!</p>
-          <button type="button" onClick={reset} className="rounded-full bg-white text-indigo-700 px-8 py-3 text-xl font-extrabold shadow hover:bg-indigo-50 transition">
-            Play Again
-          </button>
-        </div>
-      )}
-    </div>
+    </GameContainer>
   );
 }
 

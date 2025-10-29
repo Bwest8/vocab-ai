@@ -1,8 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { WordWithRelations } from "@/lib/study/types";
 import type { GameResult } from "@/lib/hooks/useGameProgress";
+import {
+  GameHeader,
+  GameContainer,
+  QuestionCard,
+  AnswerButton,
+  FeedbackMessage,
+  GameIntro,
+  GameResults,
+} from "./shared";
 
 interface BaseGameProps {
   weeklyWords: WordWithRelations[];
@@ -10,6 +20,22 @@ interface BaseGameProps {
   allWords: WordWithRelations[];
   onResult: (result: GameResult) => void;
 }
+
+interface GameSession {
+  questions: Array<{
+    id: string;
+    word: string;
+    definition: string;
+    options: string[];
+  }>;
+  results: Array<{ wordId: string; word: string; definition: string; correct: boolean }>;
+  currentIndex: number;
+  score: number;
+  pointsEarned: number;
+}
+
+const QUESTIONS_PER_SESSION = 10;
+const POINTS_PER_CORRECT = 12;
 
 const shuffle = <T,>(array: T[]) => {
   const copy = [...array];
@@ -20,8 +46,17 @@ const shuffle = <T,>(array: T[]) => {
   return copy;
 };
 
+type GameState = "intro" | "playing" | "results";
+
 export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
-  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords]);
+  const router = useRouter();
+  const [gameState, setGameState] = useState<GameState>("intro");
+  const [session, setSession] = useState<GameSession | null>(null);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+
+  const shuffledWords = useMemo(() => shuffle([...weeklyWords]).slice(0, QUESTIONS_PER_SESSION), [weeklyWords]);
 
   const optionPool = useMemo(() => {
     const combined = [...shuffledWords];
@@ -53,141 +88,215 @@ export function ReverseDefinitionGame({ weeklyWords, reviewWords, allWords, onRe
 
       return {
         id: word.id,
-        prompt: word.word,
-        definition: word.teacherDefinition || word.definition,
-        teacherDefinition: word.teacherDefinition,
         word: word.word,
+        definition: word.teacherDefinition || word.definition,
         options,
-        mastery: 0, // We'll calculate this if needed
       };
     });
   }, [shuffledWords, optionPool]);
 
-  const [index, setIndex] = useState(0);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
-  const currentQuestion = questions[index];
-  const totalQuestions = questions.length;
+  const startGame = () => {
+    setSession({
+      questions,
+      results: [],
+      currentIndex: 0,
+      score: 0,
+      pointsEarned: 0,
+    });
+    setGameState("playing");
+  };
 
   const selectOption = (option: string) => {
-    if (!currentQuestion || selectedOption) return;
+    if (!session || selectedOption) return;
 
+    const currentQuestion = session.questions[session.currentIndex];
     setSelectedOption(option);
     const correct = option === currentQuestion.definition;
-    setIsCorrect(correct);
-    setFeedback(
-      correct ? "Nice work!" : `The correct answer was "${currentQuestion.teacherDefinition || currentQuestion.definition}".`
-    );
+
+    setFeedback({
+      correct,
+      message: correct ? "" : `The correct answer was "${currentQuestion.definition}".`,
+    });
+
+    const points = correct ? POINTS_PER_CORRECT : 0;
 
     onResult({
       mode: "reverse-definition",
       correct,
-      pointsAwarded: correct ? 12 : 0,
+      pointsAwarded: points,
       wordId: currentQuestion.id,
     });
 
-    setTimeout(() => {
+    const newResults = [
+      ...session.results,
+      {
+        wordId: currentQuestion.id,
+        word: currentQuestion.word,
+        definition: currentQuestion.definition,
+        correct,
+      },
+    ];
+
+    const newSession = {
+      ...session,
+      results: newResults,
+      score: session.score + (correct ? 1 : 0),
+      pointsEarned: session.pointsEarned + points,
+    };
+
+    setSession(newSession);
+
+    timeoutRef.current = window.setTimeout(() => {
       setSelectedOption(null);
       setFeedback(null);
-      setIsCorrect(null);
-      setIndex((prev) => (prev + 1) % questions.length);
-    }, 1200);
+
+      if (session.currentIndex + 1 >= session.questions.length) {
+        setGameState("results");
+      } else {
+        setSession({ ...newSession, currentIndex: session.currentIndex + 1 });
+      }
+    }, 2500);
   };
 
   const skip = () => {
-    if (!currentQuestion) return;
+    if (!session) return;
     setSelectedOption(null);
     setFeedback(null);
-    setIsCorrect(null);
-    setIndex((prev) => (prev + 1) % questions.length);
+
+    if (session.currentIndex + 1 >= session.questions.length) {
+      setGameState("results");
+    } else {
+      setSession({ ...session, currentIndex: session.currentIndex + 1 });
+    }
   };
 
-  if (!currentQuestion) {
-    return <p className="rounded-2xl bg-white/80 p-6 text-center text-sm text-slate-500">We need some vocabulary words to get started.</p>;
+  const playAgain = () => {
+    setSession(null);
+    setSelectedOption(null);
+    setFeedback(null);
+    setGameState("intro");
+  };
+
+  if (questions.length === 0) {
+    return (
+      <GameContainer>
+        <p className="rounded-2xl bg-white/80 p-6 text-center text-lg text-slate-500">
+          Add some words to this set to unlock the games!
+        </p>
+      </GameContainer>
+    );
   }
 
+  if (gameState === "intro") {
+    return (
+      <GameContainer>
+        <GameIntro
+          icon="🔄"
+          title="Reverse Definition"
+          description="See the vocabulary word and choose the correct definition from four options."
+          objective="Strengthen your understanding by matching words to their meanings."
+          difficulty="Medium"
+          questionsCount={questions.length}
+          onStart={startGame}
+          color="purple"
+        />
+      </GameContainer>
+    );
+  }
+
+  if (gameState === "results" && session) {
+    const percentage = (session.score / session.questions.length) * 100;
+    const encouragementLevel = percentage >= 80 ? "excellent" : percentage >= 60 ? "good" : "needs-practice";
+
+    return (
+      <GameContainer>
+        <GameResults
+          icon="🔄"
+          title="Reverse Definition"
+          score={session.score}
+          totalQuestions={session.questions.length}
+          pointsEarned={session.pointsEarned}
+          wordsToReview={session.results.map((r) => ({
+            word: r.word,
+            definition: r.definition,
+            wasCorrect: r.correct,
+          }))}
+          onPlayAgain={playAgain}
+          onBackToGames={() => router.push("/games")}
+          color="purple"
+          encouragementLevel={encouragementLevel}
+        />
+      </GameContainer>
+    );
+  }
+
+  if (!session) return null;
+
+  const currentQuestion = session.questions[session.currentIndex];
+
   return (
-    <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-purple-100/70 backdrop-blur-sm">
-      {/* Progress Header */}
-      <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-purple-50 px-5 py-4 border border-purple-200">
-        <div className="flex items-center gap-3">
-          <div className="text-3xl">🔄</div>
-          <div>
-            <h2 className="text-lg font-bold text-purple-900">Reverse Mode</h2>
-            <p className="text-sm text-purple-600">Word {index + 1} of {totalQuestions}</p>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex gap-1">
-            {Array.from({ length: totalQuestions }).map((_, idx) => (
-              <div
-                key={idx}
-                className={`h-2 w-2 rounded-full transition-all ${
-                  idx === index
-                    ? "bg-purple-600 scale-125"
-                    : idx < index
-                    ? "bg-purple-400"
-                    : "bg-purple-200"
-                }`}
-              />
-            ))}
-          </div>
-          <p className="text-xs font-semibold text-purple-700">
-            {Math.round(((index) / totalQuestions) * 100)}% Complete
-          </p>
-        </div>
-      </div>
+    <GameContainer>
+      <GameHeader
+        icon="🔄"
+        title="Reverse Definition"
+        subtitle="Choose the correct definition"
+        currentQuestion={session.currentIndex + 1}
+        totalQuestions={session.questions.length}
+        color="purple"
+        showProgress={true}
+        showBack={false}
+      />
 
-      <div className="flex items-start justify-between gap-4">
+      <QuestionCard showSkip={!selectedOption} onSkip={skip}>
         <div>
-          <p className="text-xs uppercase tracking-wide text-purple-600">Word</p>
-          <h3 className="mt-2 text-3xl font-bold text-slate-900">{currentQuestion.word}</h3>
+          <p className="text-sm font-bold uppercase tracking-wide text-purple-600">Word</p>
+          <h3 className="mt-3 text-4xl font-extrabold text-slate-900">
+            {currentQuestion.word}
+          </h3>
         </div>
-        <button
-          type="button"
-          onClick={skip}
-          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-purple-300 hover:text-purple-500"
-        >
-          Skip
-        </button>
-      </div>
 
-      <div className="mt-6 grid gap-3">
-        {currentQuestion.options.map((option) => {
-          const isSelected = selectedOption === option;
-          const correctOption = option === currentQuestion.definition;
-          const stateClass = selectedOption
-            ? correctOption
-              ? "border-emerald-400 bg-emerald-50"
-              : isSelected
-                ? "border-rose-400 bg-rose-50"
-                : "opacity-60"
-            : "hover:border-purple-200 hover:bg-purple-50";
+        <div className="mt-8 grid gap-4">
+          {currentQuestion.options.map((option) => {
+            const isSelected = selectedOption === option;
+            const isCorrect = option === currentQuestion.definition;
+            const showCorrect = selectedOption !== null && isCorrect;
+            const showWrong = isSelected && !isCorrect;
 
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => selectOption(option)}
-              className={`rounded-2xl border px-5 py-4 text-left text-sm font-medium transition ${stateClass}`}
-            >
-              {option}
-            </button>
-          );
-        })}
-      </div>
+            return (
+              <AnswerButton
+                key={option}
+                onClick={() => selectOption(option)}
+                isSelected={isSelected}
+                isCorrect={showCorrect}
+                isWrong={showWrong}
+                disabled={selectedOption !== null}
+                variant="large"
+              >
+                {option}
+              </AnswerButton>
+            );
+          })}
+        </div>
+      </QuestionCard>
 
       {feedback && (
-        <div className={`mt-5 rounded-2xl border px-4 py-3 text-sm font-semibold ${
-          isCorrect ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-600"
-        }`}
-        >
-          {feedback}
-        </div>
+        <FeedbackMessage
+          isCorrect={feedback.correct}
+          message={feedback.message}
+          word={currentQuestion.word}
+          definition={currentQuestion.definition}
+          showContext={true}
+        />
       )}
-    </div>
+    </GameContainer>
   );
 }
 

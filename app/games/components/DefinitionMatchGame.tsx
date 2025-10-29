@@ -1,10 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { WordWithRelations } from "@/lib/study/types";
 import { toMasteryLevel } from "@/lib/study/utils";
 import type { GameMode } from "@/lib/types";
 import type { GameResult } from "@/lib/hooks/useGameProgress";
+import {
+  GameHeader,
+  GameContainer,
+  QuestionCard,
+  AnswerButton,
+  FeedbackMessage,
+  GameIntro,
+  GameResults,
+} from "./shared";
 
 interface BaseGameProps {
   weeklyWords: WordWithRelations[];
@@ -23,6 +33,14 @@ interface MultipleChoiceQuestion {
   mastery: number;
 }
 
+interface GameSession {
+  questions: MultipleChoiceQuestion[];
+  results: Array<{ wordId: string; word: string; definition: string; correct: boolean }>;
+  currentIndex: number;
+  score: number;
+  pointsEarned: number;
+}
+
 const POINTS: Record<GameMode, number> = {
   "definition-match": 10,
   "reverse-definition": 12,
@@ -31,6 +49,8 @@ const POINTS: Record<GameMode, number> = {
   "matching": 10,
   "word-scramble": 10,
 };
+
+const QUESTIONS_PER_SESSION = 10;
 
 const shuffle = <T,>(array: T[]) => {
   const copy = [...array];
@@ -86,16 +106,22 @@ const buildMultipleChoiceQuestions = (
   });
 };
 
-const useMultipleChoiceRun = (
-  questions: MultipleChoiceQuestion[],
-  mode: GameMode,
-  onResult: (result: GameResult) => void
-) => {
-  const [index, setIndex] = useState(0);
+type GameState = "intro" | "playing" | "results";
+
+export function DefinitionMatchGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
+  const router = useRouter();
+  const [gameState, setGameState] = useState<GameState>("intro");
+  const [session, setSession] = useState<GameSession | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
   const timeoutRef = useRef<number | null>(null);
+
+  const shuffledWords = useMemo(() => shuffle([...weeklyWords]).slice(0, QUESTIONS_PER_SESSION), [weeklyWords]);
+  const optionPool = useMemo(() => getOptionPool(shuffledWords, reviewWords, allWords), [shuffledWords, reviewWords, allWords]);
+  const questions = useMemo(
+    () => buildMultipleChoiceQuestions(shuffledWords, optionPool, "definition"),
+    [shuffledWords, optionPool]
+  );
 
   useEffect(() => {
     return () => {
@@ -105,150 +131,241 @@ const useMultipleChoiceRun = (
     };
   }, []);
 
-  const currentQuestion = questions[index];
+  const startGame = () => {
+    setSession({
+      questions,
+      results: [],
+      currentIndex: 0,
+      score: 0,
+      pointsEarned: 0,
+    });
+    setGameState("playing");
+  };
 
   const selectOption = (option: string) => {
-    if (!currentQuestion || selectedOption) return;
+    if (!session || selectedOption) return;
 
+    const currentQuestion = session.questions[session.currentIndex];
     setSelectedOption(option);
-    const correct = mode === "reverse-definition" ? option === currentQuestion.definition : option === currentQuestion.word;
-    setIsCorrect(correct);
-    setFeedback(
-      correct ? "Nice work!" : `The correct answer was "${mode === "reverse-definition" ? (currentQuestion.teacherDefinition || currentQuestion.definition) : currentQuestion.word}".`
-    );
+    const correct = option === currentQuestion.word;
+
+    setFeedback({
+      correct,
+      message: correct ? "" : `The correct answer was "${currentQuestion.word}".`,
+    });
+
+    const points = correct ? POINTS["definition-match"] : 0;
 
     onResult({
-      mode,
+      mode: "definition-match",
       correct,
-      pointsAwarded: correct ? POINTS[mode] : 0,
+      pointsAwarded: points,
       wordId: currentQuestion.id,
     });
+
+    const newResults = [
+      ...session.results,
+      {
+        wordId: currentQuestion.id,
+        word: currentQuestion.word,
+        definition: currentQuestion.definition,
+        correct,
+      },
+    ];
+
+    const newSession = {
+      ...session,
+      results: newResults,
+      score: session.score + (correct ? 1 : 0),
+      pointsEarned: session.pointsEarned + points,
+    };
+
+    setSession(newSession);
 
     timeoutRef.current = window.setTimeout(() => {
       setSelectedOption(null);
       setFeedback(null);
-      setIsCorrect(null);
-      setIndex((prev) => (prev + 1) % questions.length);
-    }, 1200);
+
+      if (session.currentIndex + 1 >= session.questions.length) {
+        setGameState("results");
+      } else {
+        setSession({ ...newSession, currentIndex: session.currentIndex + 1 });
+      }
+    }, 2500);
   };
 
   const skip = () => {
-    if (!currentQuestion) return;
+    if (!session) return;
     setSelectedOption(null);
     setFeedback(null);
-    setIsCorrect(null);
-    setIndex((prev) => (prev + 1) % questions.length);
+
+    if (session.currentIndex + 1 >= session.questions.length) {
+      setGameState("results");
+    } else {
+      setSession({ ...session, currentIndex: session.currentIndex + 1 });
+    }
   };
 
-  return {
-    currentQuestion,
-    currentIndex: index,
-    totalQuestions: questions.length,
-    selectedOption,
-    feedback,
-    isCorrect,
-    selectOption,
-    skip,
-  } as const;
-};
+  const playAgain = () => {
+    setSession(null);
+    setSelectedOption(null);
+    setFeedback(null);
+    setGameState("intro");
+  };
 
-export function DefinitionMatchGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
-  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords]);
-  const optionPool = useMemo(() => getOptionPool(shuffledWords, reviewWords, allWords), [shuffledWords, reviewWords, allWords]);
-  const questions = useMemo(
-    () => buildMultipleChoiceQuestions(shuffledWords, optionPool, "definition"),
-    [shuffledWords, optionPool]
-  );
-
-  const { currentQuestion, currentIndex, totalQuestions, selectedOption, feedback, isCorrect, selectOption, skip } = useMultipleChoiceRun(
-    questions,
-    "definition-match",
-    onResult
-  );
-
-  if (!currentQuestion) {
-    return <p className="rounded-2xl bg-white/80 p-6 text-center text-sm text-slate-500">Add some words to this set to unlock the games!</p>;
+  if (questions.length === 0) {
+    return (
+      <GameContainer>
+        <p className="rounded-2xl bg-white/80 p-6 text-center text-lg text-slate-500">
+          Add some words to this set to unlock the games!
+        </p>
+      </GameContainer>
+    );
   }
 
+  if (gameState === "intro") {
+    return (
+      <GameContainer>
+        <GameIntro
+          icon="📖"
+          title="Definition Match"
+          description="Read the definition and choose the correct vocabulary word from four options."
+          objective="Master word meanings by matching definitions to their corresponding words."
+          difficulty="Easy"
+          questionsCount={questions.length}
+          onStart={startGame}
+          color="indigo"
+        />
+      </GameContainer>
+    );
+  }
+
+  if (gameState === "results" && session) {
+    const percentage = (session.score / session.questions.length) * 100;
+    const encouragementLevel = percentage >= 80 ? "excellent" : percentage >= 60 ? "good" : "needs-practice";
+
+    return (
+      <GameContainer>
+        <GameResults
+          icon="📖"
+          title="Definition Match"
+          score={session.score}
+          totalQuestions={session.questions.length}
+          pointsEarned={session.pointsEarned}
+          wordsToReview={session.results.map((r) => ({
+            word: r.word,
+            definition: r.definition,
+            wasCorrect: r.correct,
+          }))}
+          onPlayAgain={playAgain}
+          onBackToGames={() => router.push("/games")}
+          color="indigo"
+          encouragementLevel={encouragementLevel}
+        />
+      </GameContainer>
+    );
+  }
+
+  if (!session) return null;
+
+  const currentQuestion = session.questions[session.currentIndex];
+
   return (
-    <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-indigo-100/70 backdrop-blur-sm">
-      {/* Progress Header */}
-      <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-indigo-50 px-5 py-4 border border-indigo-200">
-        <div className="flex items-center gap-3">
-          <div className="text-3xl">📖</div>
-          <div>
-            <h2 className="text-lg font-bold text-indigo-900">Definition Match</h2>
-            <p className="text-sm text-indigo-600">Word {currentIndex + 1} of {totalQuestions}</p>
+    <GameContainer>
+      <GameHeader
+        icon="📖"
+        title="Definition Match"
+        currentQuestion={session.currentIndex + 1}
+        totalQuestions={session.questions.length}
+        color="indigo"
+        showProgress={true}
+        showBack={false}
+      />
+
+      {/* iPad Landscape Grid: 60/40 split */}
+      <div className="flex flex-1 flex-col gap-6 landscape:flex-row landscape:gap-8">
+        {/* Main Area - Definition + Answers */}
+        <div className="flex flex-1 flex-col gap-6">
+          {/* Definition Card */}
+          <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100 p-8 shadow-lg landscape:h-[180px] landscape:flex landscape:flex-col landscape:justify-center landscape:p-10">
+            <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">Definition</p>
+            <h3 className="mt-3 text-3xl font-bold leading-snug text-slate-900 landscape:mt-2 landscape:text-2xl">
+              {currentQuestion.prompt}
+            </h3>
+          </div>
+
+          {/* Answer Grid - 2x2 */}
+          <div className="grid flex-1 grid-cols-2 gap-5 landscape:gap-6">
+            {currentQuestion.options.map((option) => {
+              const isSelected = selectedOption === option;
+              const isCorrect = option === currentQuestion.word;
+              const showCorrect = selectedOption !== null && isCorrect;
+              const showWrong = isSelected && !isCorrect;
+
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => selectOption(option)}
+                  disabled={selectedOption !== null}
+                  className={`flex items-center justify-center rounded-2xl border-4 p-8 text-2xl font-bold shadow-lg transition-all active:scale-95 landscape:p-6 landscape:text-xl ${
+                    showCorrect
+                      ? "border-emerald-500 bg-emerald-100 text-emerald-900 scale-105"
+                      : showWrong
+                        ? "border-rose-500 bg-rose-100 text-rose-900"
+                        : selectedOption
+                          ? "border-slate-300 bg-slate-100 text-slate-400 opacity-40"
+                          : "border-indigo-300 bg-white text-slate-800 hover:border-indigo-500 hover:bg-indigo-50"
+                  }`}
+                >
+                  {option}
+                </button>
+              );
+            })}
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex gap-1">
-            {Array.from({ length: totalQuestions }).map((_, idx) => (
-              <div
-                key={idx}
-                className={`h-2 w-2 rounded-full transition-all ${
-                  idx === currentIndex
-                    ? "bg-indigo-600 scale-125"
-                    : idx < currentIndex
-                    ? "bg-indigo-400"
-                    : "bg-indigo-200"
-                }`}
-              />
-            ))}
-          </div>
-          <p className="text-xs font-semibold text-indigo-700">
-            {Math.round(((currentIndex) / totalQuestions) * 100)}% Complete
-          </p>
-        </div>
-      </div>
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-indigo-600">Definition</p>
-          <h3 className="mt-2 text-xl font-semibold text-slate-900">{currentQuestion.prompt}</h3>
-        </div>
-        <button
-          type="button"
-          onClick={skip}
-          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-indigo-300 hover:text-indigo-500"
-        >
-          Skip
-        </button>
-      </div>
-
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {currentQuestion.options.map((option) => {
-          const isSelected = selectedOption === option;
-          const correctOption = option === currentQuestion.word;
-          const stateClass = selectedOption
-            ? correctOption
-              ? "border-emerald-400 bg-emerald-50"
-              : isSelected
-                ? "border-rose-400 bg-rose-50"
-                : "opacity-60"
-            : "hover:border-indigo-200 hover:bg-indigo-50";
-
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => selectOption(option)}
-              className={`rounded-2xl border px-5 py-4 text-left text-base font-semibold transition ${stateClass}`}
+        {/* Feedback Sidebar - Only shows when feedback exists */}
+        {feedback && (
+          <div className="landscape:w-[38%] landscape:flex landscape:flex-col">
+            <div
+              className={`flex h-full flex-col justify-center rounded-2xl border-4 p-8 shadow-xl landscape:p-10 ${
+                feedback.correct
+                  ? "border-emerald-400 bg-emerald-50"
+                  : "border-rose-400 bg-rose-50"
+              }`}
             >
-              {option}
-            </button>
-          );
-        })}
-      </div>
+              <div className="text-center">
+                <div className="text-7xl landscape:text-6xl">{feedback.correct ? "✅" : "💡"}</div>
+                <p
+                  className={`mt-6 text-3xl font-bold landscape:mt-5 landscape:text-2xl ${
+                    feedback.correct ? "text-emerald-900" : "text-rose-900"
+                  }`}
+                >
+                  {feedback.correct ? "Excellent!" : "Not quite!"}
+                </p>
+                {!feedback.correct && (
+                  <p className="mt-4 text-xl font-semibold text-rose-800 landscape:text-lg">
+                    {feedback.message}
+                  </p>
+                )}
+              </div>
 
-      {feedback && (
-        <div className={`mt-5 rounded-2xl border px-4 py-3 text-sm font-semibold ${
-          isCorrect ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-600"
-        }`}
-        >
-          {feedback}
-        </div>
-      )}
-    </div>
+              <div className="mt-8 rounded-xl bg-white/70 p-6 landscape:mt-6 landscape:p-5">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                  Remember
+                </p>
+                <p className="mt-3 text-2xl font-bold text-slate-900 landscape:mt-2 landscape:text-xl">
+                  {currentQuestion.word}
+                </p>
+                <p className="mt-2 text-lg leading-snug text-slate-700 landscape:text-base">
+                  {currentQuestion.definition}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </GameContainer>
   );
 }

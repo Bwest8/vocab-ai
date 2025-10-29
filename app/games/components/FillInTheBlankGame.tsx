@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { WordWithRelations } from "@/lib/study/types";
 import type { GameResult } from "@/lib/hooks/useGameProgress";
+import {
+  GameHeader,
+  GameContainer,
+  QuestionCard,
+  AnswerButton,
+  FeedbackMessage,
+  GameIntro,
+  GameResults,
+} from "./shared";
 
 interface BaseGameProps {
   weeklyWords: WordWithRelations[];
@@ -10,6 +20,23 @@ interface BaseGameProps {
   allWords: WordWithRelations[];
   onResult: (result: GameResult) => void;
 }
+
+interface GameSession {
+  questions: Array<{
+    id: string;
+    sentence: string;
+    correct: string;
+    definition: string;
+    options: string[];
+  }>;
+  results: Array<{ wordId: string; word: string; definition: string; correct: boolean }>;
+  currentIndex: number;
+  score: number;
+  pointsEarned: number;
+}
+
+const QUESTIONS_PER_SESSION = 10;
+const POINTS_PER_CORRECT = 14;
 
 const shuffle = <T,>(array: T[]) => {
   const copy = [...array];
@@ -46,9 +73,19 @@ const createSentenceWithBlank = (word: WordWithRelations) => {
   return `_____ (${word.partOfSpeech ?? "word"}) ${(word.teacherDefinition || word.definition).toLowerCase()}.`;
 };
 
+type GameState = "intro" | "playing" | "results";
+
 export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
-  const shuffledWords = useMemo(() => shuffle([...weeklyWords]), [weeklyWords]);
+  const router = useRouter();
+  const [gameState, setGameState] = useState<GameState>("intro");
+  const [session, setSession] = useState<GameSession | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ correct: boolean; message: string } | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+
+  const shuffledWords = useMemo(() => shuffle([...weeklyWords]).slice(0, QUESTIONS_PER_SESSION), [weeklyWords]);
   const optionPool = useMemo(() => getOptionPool(shuffledWords, reviewWords, allWords), [shuffledWords, reviewWords, allWords]);
+
   const questions = useMemo(() => {
     return shuffledWords.map((word) => {
       const sentence = createSentenceWithBlank(word);
@@ -62,132 +99,214 @@ export function FillInTheBlankGame({ weeklyWords, reviewWords, allWords, onResul
         id: word.id,
         sentence,
         correct: word.word,
+        definition: word.teacherDefinition || word.definition,
         options: shuffle([word.word, ...otherOptions]),
       };
     });
   }, [shuffledWords, optionPool]);
 
-  const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const timeoutRef = useRef<number | null>(null);
-
-  useEffect(() => () => {
-    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
+    };
   }, []);
 
-  const current = questions[index];
-  const totalQuestions = questions.length;
+  const startGame = () => {
+    setSession({
+      questions,
+      results: [],
+      currentIndex: 0,
+      score: 0,
+      pointsEarned: 0,
+    });
+    setGameState("playing");
+  };
 
   const choose = (option: string) => {
-    if (!current || selected) return;
+    if (!session || selected) return;
 
+    const currentQuestion = session.questions[session.currentIndex];
     setSelected(option);
-    const correct = option === current.correct;
-    setFeedback(correct ? "Great choice!" : `Try again—"${current.correct}" fits best here.`);
+    const correct = option === currentQuestion.correct;
 
-  onResult({ mode: "fill-in-the-blank", correct, pointsAwarded: correct ? 14 : 0, wordId: current.id });
+    setFeedback({
+      correct,
+      message: correct ? "" : `The correct word is "${currentQuestion.correct}".`,
+    });
+
+    const points = correct ? POINTS_PER_CORRECT : 0;
+
+    onResult({
+      mode: "fill-in-the-blank",
+      correct,
+      pointsAwarded: points,
+      wordId: currentQuestion.id,
+    });
+
+    const newResults = [
+      ...session.results,
+      {
+        wordId: currentQuestion.id,
+        word: currentQuestion.correct,
+        definition: currentQuestion.definition,
+        correct,
+      },
+    ];
+
+    const newSession = {
+      ...session,
+      results: newResults,
+      score: session.score + (correct ? 1 : 0),
+      pointsEarned: session.pointsEarned + points,
+    };
+
+    setSession(newSession);
 
     timeoutRef.current = window.setTimeout(() => {
       setSelected(null);
       setFeedback(null);
-      setIndex((prev) => (prev + 1) % questions.length);
-    }, 1500);
+
+      if (session.currentIndex + 1 >= session.questions.length) {
+        setGameState("results");
+      } else {
+        setSession({ ...newSession, currentIndex: session.currentIndex + 1 });
+      }
+    }, 2500);
   };
 
   const skip = () => {
-    if (!current) return;
+    if (!session) return;
     setSelected(null);
     setFeedback(null);
-    setIndex((prev) => (prev + 1) % questions.length);
+
+    if (session.currentIndex + 1 >= session.questions.length) {
+      setGameState("results");
+    } else {
+      setSession({ ...session, currentIndex: session.currentIndex + 1 });
+    }
   };
 
-  if (!current) {
-    return <p className="rounded-2xl bg-white/80 p-6 text-center text-sm text-slate-500">We need sentences to play this game—add example sentences to your vocab words!</p>;
+  const playAgain = () => {
+    setSession(null);
+    setSelected(null);
+    setFeedback(null);
+    setGameState("intro");
+  };
+
+  if (questions.length === 0) {
+    return (
+      <GameContainer>
+        <p className="rounded-2xl bg-white/80 p-6 text-center text-lg text-slate-500">
+          Add some words to this set to unlock the games!
+        </p>
+      </GameContainer>
+    );
   }
 
+  if (gameState === "intro") {
+    return (
+      <GameContainer>
+        <GameIntro
+          icon="✍️"
+          title="Fill in the Blank"
+          description="Read the sentence and choose the vocabulary word that best completes it."
+          objective="Apply vocabulary words in context by selecting the best fit for each sentence."
+          difficulty="Medium"
+          questionsCount={questions.length}
+          onStart={startGame}
+          color="emerald"
+        />
+      </GameContainer>
+    );
+  }
+
+  if (gameState === "results" && session) {
+    const percentage = (session.score / session.questions.length) * 100;
+    const encouragementLevel = percentage >= 80 ? "excellent" : percentage >= 60 ? "good" : "needs-practice";
+
+    return (
+      <GameContainer>
+        <GameResults
+          icon="✍️"
+          title="Fill in the Blank"
+          score={session.score}
+          totalQuestions={session.questions.length}
+          pointsEarned={session.pointsEarned}
+          wordsToReview={session.results.map((r) => ({
+            word: r.word,
+            definition: r.definition,
+            wasCorrect: r.correct,
+          }))}
+          onPlayAgain={playAgain}
+          onBackToGames={() => router.push("/games")}
+          color="emerald"
+          encouragementLevel={encouragementLevel}
+        />
+      </GameContainer>
+    );
+  }
+
+  if (!session) return null;
+
+  const currentQuestion = session.questions[session.currentIndex];
+
   return (
-    <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-emerald-100/70 backdrop-blur-sm">
-      {/* Progress Header */}
-      <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-emerald-50 px-5 py-4 border border-emerald-200">
-        <div className="flex items-center gap-3">
-          <div className="text-3xl">✍️</div>
-          <div>
-            <h2 className="text-lg font-bold text-emerald-900">Fill in the Blank</h2>
-            <p className="text-sm text-emerald-600">Word {index + 1} of {totalQuestions}</p>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex gap-1">
-            {Array.from({ length: totalQuestions }).map((_, idx) => (
-              <div
-                key={idx}
-                className={`h-2 w-2 rounded-full transition-all ${
-                  idx === index
-                    ? "bg-emerald-600 scale-125"
-                    : idx < index
-                    ? "bg-emerald-400"
-                    : "bg-emerald-200"
-                }`}
-              />
-            ))}
-          </div>
-          <p className="text-xs font-semibold text-emerald-700">
-            {Math.round(((index) / totalQuestions) * 100)}% Complete
+    <GameContainer>
+      <GameHeader
+        icon="✍️"
+        title="Fill in the Blank"
+        subtitle="Choose the word that fits"
+        currentQuestion={session.currentIndex + 1}
+        totalQuestions={session.questions.length}
+        color="emerald"
+        showProgress={true}
+        showBack={false}
+      />
+
+      <QuestionCard showSkip={!selected} onSkip={skip}>
+        <div>
+          <p className="text-sm font-bold uppercase tracking-wide text-emerald-600">Complete the Sentence</p>
+          <p className="mt-3 text-2xl font-medium leading-relaxed text-slate-900">
+            {currentQuestion.sentence}
           </p>
         </div>
-      </div>
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-emerald-600">Sentence</p>
-          <p className="mt-2 text-lg font-medium text-slate-900">{current.sentence}</p>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          {currentQuestion.options.map((option) => {
+            const isSelected = selected === option;
+            const isCorrect = option === currentQuestion.correct;
+            const showCorrect = selected !== null && isCorrect;
+            const showWrong = isSelected && !isCorrect;
+
+            return (
+              <AnswerButton
+                key={option}
+                onClick={() => choose(option)}
+                isSelected={isSelected}
+                isCorrect={showCorrect}
+                isWrong={showWrong}
+                disabled={selected !== null}
+                variant="large"
+              >
+                {option}
+              </AnswerButton>
+            );
+          })}
         </div>
-        <button
-          type="button"
-          onClick={skip}
-          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-emerald-300 hover:text-emerald-500"
-        >
-          Skip
-        </button>
-      </div>
-
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {current.options.map((option) => {
-          const isSelected = selected === option;
-          const correctOption = option === current.correct;
-          const stateClass = selected
-            ? correctOption
-              ? "border-emerald-400 bg-emerald-50"
-              : isSelected
-                ? "border-rose-400 bg-rose-50"
-                : "opacity-60"
-            : "hover:border-emerald-200 hover:bg-emerald-50";
-
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => choose(option)}
-              className={`rounded-2xl border px-5 py-4 text-left text-base font-semibold transition ${stateClass}`}
-            >
-              {option}
-            </button>
-          );
-        })}
-      </div>
+      </QuestionCard>
 
       {feedback && (
-        <div className={`mt-5 rounded-2xl border px-4 py-3 text-sm font-semibold ${
-          feedback.startsWith("Great")
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-            : "border-rose-200 bg-rose-50 text-rose-600"
-        }`}
-        >
-          {feedback}
-        </div>
+        <FeedbackMessage
+          isCorrect={feedback.correct}
+          message={feedback.message}
+          word={currentQuestion.correct}
+          definition={currentQuestion.definition}
+          showContext={true}
+        />
       )}
-    </div>
+    </GameContainer>
   );
 }
 

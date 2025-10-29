@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { WordWithRelations } from "@/lib/study/types";
 import type { GameResult } from "@/lib/hooks/useGameProgress";
+import {
+  GameHeader,
+  GameContainer,
+  QuestionCard,
+  AnswerButton,
+  GameIntro,
+  GameResults,
+} from "./shared";
 
 interface BaseGameProps {
   weeklyWords: WordWithRelations[];
@@ -10,6 +19,23 @@ interface BaseGameProps {
   allWords: WordWithRelations[];
   onResult: (result: GameResult) => void;
 }
+
+interface GameSession {
+  questions: Array<{
+    id: string;
+    word: string;
+    definition: string;
+    prompt: string;
+    options: string[];
+  }>;
+  results: Array<{ wordId: string; word: string; definition: string; correct: boolean }>;
+  currentIndex: number;
+  score: number;
+  pointsEarned: number;
+}
+
+const GAME_DURATION = 60; // 60 seconds
+const BASE_POINTS = 8;
 
 const shuffle = <T,>(array: T[]) => {
   const copy = [...array];
@@ -35,19 +61,33 @@ const getOptionPool = (weekly: WordWithRelations[], review: WordWithRelations[],
   return combined;
 };
 
-export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
-  const questionPool = useMemo(() => shuffle(getOptionPool(weeklyWords, reviewWords, allWords)), [weeklyWords, reviewWords, allWords]);
-  const [isActive, setIsActive] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(60);
-  const [index, setIndex] = useState(0);
-  const [score, setScore] = useState({ correct: 0, attempted: 0 });
+type GameState = "intro" | "playing" | "results";
 
-  const start = () => {
-    setIsActive(true);
-    setTimeLeft(60);
-    setScore({ correct: 0, attempted: 0 });
-    setIndex(0);
-  };
+export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult }: BaseGameProps) {
+  const router = useRouter();
+  const [gameState, setGameState] = useState<GameState>("intro");
+  const [session, setSession] = useState<GameSession | null>(null);
+  const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
+  const [isActive, setIsActive] = useState(false);
+
+  const questionPool = useMemo(() => shuffle(getOptionPool(weeklyWords, reviewWords, allWords)), [weeklyWords, reviewWords, allWords]);
+
+  const prepareQuestions = useMemo(() => {
+    return questionPool.map((word) => {
+      const pool = questionPool.filter((w) => w.id !== word.id);
+      const otherOptions = shuffle(pool)
+        .slice(0, 3)
+        .map((w) => w.word);
+
+      return {
+        id: word.id,
+        word: word.word,
+        definition: word.teacherDefinition || word.definition,
+        prompt: word.teacherDefinition || word.definition,
+        options: shuffle([word.word, ...otherOptions]),
+      };
+    });
+  }, [questionPool]);
 
   useEffect(() => {
     if (!isActive) return () => undefined;
@@ -57,6 +97,7 @@ export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult }:
         if (prev <= 1) {
           window.clearInterval(timer);
           setIsActive(false);
+          setGameState("results");
           return 0;
         }
         return prev - 1;
@@ -68,107 +109,165 @@ export function SpeedRoundGame({ weeklyWords, reviewWords, allWords, onResult }:
     };
   }, [isActive]);
 
-  const currentWord = questionPool[index % questionPool.length];
-
-  const ask = useMemo(() => {
-    if (!currentWord) return null;
-    const pool = questionPool.filter((word) => word.id !== currentWord.id);
-    const options = shuffle(pool)
-      .slice(0, 3)
-      .map((word) => word.word);
-    return {
-      prompt: currentWord.definition,
-      correct: currentWord.word,
-      options: shuffle([currentWord.word, ...options]),
-    };
-  }, [currentWord, questionPool]);
+  const startGame = () => {
+    setSession({
+      questions: prepareQuestions,
+      results: [],
+      currentIndex: 0,
+      score: 0,
+      pointsEarned: 0,
+    });
+    setTimeLeft(GAME_DURATION);
+    setIsActive(true);
+    setGameState("playing");
+  };
 
   const answer = (option: string) => {
-    if (!ask || !isActive) return;
+    if (!session || !isActive) return;
 
-    const correct = option === ask.correct;
-    setScore((prev) => ({
-      attempted: prev.attempted + 1,
-      correct: prev.correct + (correct ? 1 : 0),
-    }));
-    setIndex((prev) => prev + 1);
+    const currentQuestion = session.questions[session.currentIndex];
+    const correct = option === currentQuestion.word;
+
+    const points = correct ? BASE_POINTS + Math.max(0, timeLeft - 20) : 0;
 
     onResult({
       mode: "speed-round",
       correct,
-      pointsAwarded: correct ? 8 + Math.max(0, timeLeft - 20) : 0,
+      pointsAwarded: points,
       timeRemaining: timeLeft,
-      wordId: currentWord.id,
+      wordId: currentQuestion.id,
     });
+
+    const newResults = [
+      ...session.results,
+      {
+        wordId: currentQuestion.id,
+        word: currentQuestion.word,
+        definition: currentQuestion.definition,
+        correct,
+      },
+    ];
+
+    const newSession = {
+      ...session,
+      results: newResults,
+      score: session.score + (correct ? 1 : 0),
+      pointsEarned: session.pointsEarned + points,
+      currentIndex: (session.currentIndex + 1) % session.questions.length,
+    };
+
+    setSession(newSession);
   };
 
+  const playAgain = () => {
+    setSession(null);
+    setTimeLeft(GAME_DURATION);
+    setIsActive(false);
+    setGameState("intro");
+  };
+
+  if (questionPool.length === 0) {
+    return (
+      <GameContainer>
+        <p className="rounded-2xl bg-white/80 p-6 text-center text-lg text-slate-500">
+          Add some words to this set to unlock the games!
+        </p>
+      </GameContainer>
+    );
+  }
+
+  if (gameState === "intro") {
+    return (
+      <GameContainer>
+        <GameIntro
+          icon="⚡"
+          title="Speed Round"
+          description="Race against the clock! Answer as many definition-match questions as you can in 60 seconds. Faster answers earn bonus points!"
+          objective="Test your quick thinking and vocabulary recall under time pressure."
+          difficulty="Hard"
+          questionsCount={questionPool.length}
+          onStart={startGame}
+          color="amber"
+        />
+      </GameContainer>
+    );
+  }
+
+  if (gameState === "results" && session) {
+    const percentage = session.results.length > 0 ? (session.score / session.results.length) * 100 : 0;
+    const encouragementLevel = percentage >= 80 ? "excellent" : percentage >= 60 ? "good" : "needs-practice";
+
+    return (
+      <GameContainer>
+        <GameResults
+          icon="⚡"
+          title="Speed Round"
+          score={session.score}
+          totalQuestions={session.results.length}
+          pointsEarned={session.pointsEarned}
+          wordsToReview={session.results.map((r) => ({
+            word: r.word,
+            definition: r.definition,
+            wasCorrect: r.correct,
+          }))}
+          onPlayAgain={playAgain}
+          onBackToGames={() => router.push("/games")}
+          color="amber"
+          encouragementLevel={encouragementLevel}
+        />
+      </GameContainer>
+    );
+  }
+
+  if (!session) return null;
+
+  const currentQuestion = session.questions[session.currentIndex];
+
   return (
-    <div className="rounded-3xl border border-white/80 bg-white/90 p-6 shadow-md shadow-amber-100/70 backdrop-blur-sm">
-      {/* Progress Header */}
-      <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl bg-amber-50 px-5 py-4 border border-amber-200">
-        <div className="flex items-center gap-3">
-          <div className="text-3xl">⚡️</div>
-          <div>
-            <h2 className="text-lg font-bold text-amber-900">Speed Round</h2>
-            <p className="text-sm text-amber-600">
-              {isActive ? `Question ${score.attempted + 1}` : "Ready to start!"}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className={`rounded-xl px-4 py-2 font-bold text-lg ${
-            timeLeft <= 10 && isActive
-              ? "bg-rose-100 text-rose-700 animate-pulse"
-              : "bg-amber-100 text-amber-700"
-          }`}>
-            ⏱️ {timeLeft}s
-          </div>
-          {isActive && (
-            <p className="text-xs font-semibold text-amber-700">
-              {score.correct}/{score.attempted} correct
-            </p>
-          )}
+    <GameContainer>
+      <GameHeader
+        icon="⚡"
+        title="Speed Round"
+        subtitle={`Question ${session.results.length + 1}`}
+        color="amber"
+        showProgress={false}
+        showBack={false}
+      />
+
+      {/* Timer Display */}
+      <div className={`rounded-2xl p-6 text-center shadow-lg ${
+        timeLeft <= 10
+          ? "bg-gradient-to-r from-rose-500 to-orange-500 animate-pulse"
+          : "bg-gradient-to-r from-amber-500 to-orange-500"
+      }`}>
+        <div className="text-6xl font-extrabold text-white">{timeLeft}</div>
+        <div className="mt-2 text-lg font-semibold text-white/90">seconds remaining</div>
+        <div className="mt-3 text-base font-bold text-white">
+          {session.score} correct out of {session.results.length} answered
         </div>
       </div>
 
-      {!isActive ? (
-        <div className="mt-6 flex flex-col items-center gap-4">
-          <button
-            type="button"
-            onClick={start}
-            className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3 text-lg font-semibold text-white shadow-lg shadow-amber-200 transition hover:scale-[1.02]"
-          >
-            Start Speed Round
-          </button>
-          <p className="text-sm text-slate-500">You&apos;ll face quick definition match questions with time bonuses for fast answers.</p>
-          {score.attempted > 0 && (
-            <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              Final score: {score.correct}/{score.attempted} ({score.attempted > 0 ? Math.round((score.correct / score.attempted) * 100) : 0}%)
-            </div>
-          )}
+      <QuestionCard>
+        <div>
+          <p className="text-sm font-bold uppercase tracking-wide text-amber-600">Quick! What word matches this definition?</p>
+          <h3 className="mt-3 text-2xl font-semibold leading-relaxed text-slate-900">
+            {currentQuestion.prompt}
+          </h3>
         </div>
-      ) : (
-        <div className="mt-6">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
-            <h4 className="text-sm font-semibold uppercase tracking-wide text-amber-700">Definition</h4>
-            <p className="mt-2 text-base font-medium text-slate-900">{ask?.prompt}</p>
-          </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {ask?.options.map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => answer(option)}
-                className="rounded-2xl border border-amber-200 bg-white px-4 py-3 text-left text-sm font-semibold transition hover:border-amber-400 hover:bg-amber-100"
-              >
-                {option}
-              </button>
-            ))}
-          </div>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          {currentQuestion.options.map((option) => (
+            <AnswerButton
+              key={option}
+              onClick={() => answer(option)}
+              variant="large"
+            >
+              {option}
+            </AnswerButton>
+          ))}
         </div>
-      )}
-    </div>
+      </QuestionCard>
+    </GameContainer>
   );
 }
 
