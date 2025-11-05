@@ -14,14 +14,18 @@ interface CreateVocabResult {
     name: string;
     words?: Array<{ id: string }>;
   };
+  provider?: 'xai' | 'gemini';
   error?: string;
 }
+
+type Provider = 'xai' | 'gemini';
 
 export default function CreateVocabPage() {
   const [vocabSetName, setVocabSetName] = useState('');
   const [grade, setGrade] = useState('04');
   const [description, setDescription] = useState('');
   const [rawText, setRawText] = useState('');
+  const [provider, setProvider] = useState<Provider>('xai');
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<CreateVocabResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +69,7 @@ export default function CreateVocabPage() {
           vocabSetName,
           description,
           grade,
+          provider,
         }),
       });
 
@@ -102,6 +107,43 @@ export default function CreateVocabPage() {
         {/* Main Form Card */}
         <div className="rounded-2xl border border-slate-200 bg-white/90 shadow-lg p-5 md:p-6">
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Provider Selection */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-3">
+                AI Provider
+              </label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setProvider('xai')}
+                  className={`flex-1 px-4 py-3 rounded-xl border transition-all font-semibold ${
+                    provider === 'xai'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg'
+                      : 'bg-white text-slate-700 border-slate-300 hover:border-indigo-300 hover:bg-indigo-50'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="font-bold">XAI (Grok)</div>
+                    <div className="text-xs opacity-90">Current</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProvider('gemini')}
+                  className={`flex-1 px-4 py-3 rounded-xl border transition-all font-semibold ${
+                    provider === 'gemini'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg'
+                      : 'bg-white text-slate-700 border-slate-300 hover:border-indigo-300 hover:bg-indigo-50'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="font-bold">Gemini</div>
+                    <div className="text-xs opacity-90">Testing</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             {/* Set Information */}
             <div className="space-y-4">
               <div>
@@ -181,10 +223,10 @@ export default function CreateVocabPage() {
                 {isProcessing ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="h-5 w-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-                    Processing...
+                    Processing with {provider.toUpperCase()}...
                   </span>
                 ) : (
-                  '✨ Create Set'
+                  <span>✨ Create Set with {provider.toUpperCase()}</span>
                 )}
               </button>
             </div>
@@ -212,7 +254,7 @@ export default function CreateVocabPage() {
               <div className="flex-1">
                 <h3 className="font-bold text-emerald-900 text-xl">Success!</h3>
                 <p className="text-base text-emerald-700 mt-1">
-                  Created vocabulary set with <strong>{result.processedWords}</strong> words.
+                  Created vocabulary set with <strong>{result.processedWords}</strong> words using <strong>{result.provider?.toUpperCase()}</strong>.
                 </p>
               </div>
             </div>
@@ -240,22 +282,26 @@ export default function CreateVocabPage() {
           <ol className="space-y-3 text-sm text-indigo-900">
             <li className="flex gap-3">
               <span className="font-bold flex-shrink-0">1.</span>
-              <span>Enter a name for your vocabulary set</span>
+              <span>Choose your AI provider (XAI is current, Gemini is for testing)</span>
             </li>
             <li className="flex gap-3">
               <span className="font-bold flex-shrink-0">2.</span>
-              <span>Paste your word list in any format (numbered, comma-separated, etc.)</span>
+              <span>Enter a name for your vocabulary set</span>
             </li>
             <li className="flex gap-3">
               <span className="font-bold flex-shrink-0">3.</span>
-              <span>Click "Create Set" and the AI will process each word</span>
+              <span>Paste your word list in any format (numbered, comma-separated, etc.)</span>
             </li>
             <li className="flex gap-3">
               <span className="font-bold flex-shrink-0">4.</span>
-              <span>Each word receives a definition, pronunciation, and 5 example sentences</span>
+              <span>Click "Create Set" and the AI will process each word</span>
             </li>
             <li className="flex gap-3">
               <span className="font-bold flex-shrink-0">5.</span>
+              <span>Each word receives a definition, pronunciation, and 5 example sentences</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="font-bold flex-shrink-0">6.</span>
               <span>Students can generate visual illustrations on-demand while studying</span>
             </li>
           </ol>

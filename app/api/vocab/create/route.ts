@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
-import { processVocabularyWords } from '@/lib/xaiVocabProcessor';
+import { processVocabularyWords as processWithXAI } from '@/lib/xaiVocabProcessor';
+import { processVocabularyWords as processWithGemini } from '@/lib/gemini';
 import { prisma } from '@/lib/prisma';
 import type { ProcessVocabRequest } from '@/lib/types';
 
+interface ProcessVocabRequestWithProvider extends ProcessVocabRequest {
+  provider?: 'xai' | 'gemini';
+}
+
 export async function POST(request: Request) {
   try {
-    const body: ProcessVocabRequest = await request.json();
-    const { rawText, vocabSetName, description, grade } = body;
+    const body: ProcessVocabRequestWithProvider = await request.json();
+    const { rawText, vocabSetName, description, grade, provider = 'xai' } = body;
 
     if (!rawText || typeof rawText !== 'string' || rawText.trim().length === 0) {
       return NextResponse.json(
@@ -15,11 +20,13 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('Processing vocabulary text with AI...');
+    console.log(`Processing vocabulary text with ${provider.toUpperCase()}...`);
     // Process ALL words with AI in a single batch request - AI parses and processes everything first
     console.log('Sending raw text to AI for parsing and processing...');
-    const aiResults = await processVocabularyWords(rawText);
+    
+    const aiResults = await processWithAI(rawText, provider);
     console.log(`✓ AI processing complete for ${aiResults.length} words`);
+    
     // Save all words and examples atomically so no empty sets remain if an error occurs
     console.log('Saving to database atomically...');
     const createdSet = await prisma.vocabSet.create({
@@ -53,7 +60,8 @@ export async function POST(request: Request) {
       vocabSet: createdSet,
       processedWords: createdSet.words?.length ?? 0,
       totalWords: aiResults.length,
-      message: 'Vocabulary set created successfully. Students can generate images on-demand.',
+      provider: provider,
+      message: `Vocabulary set created successfully using ${provider.toUpperCase()}. Students can generate images on-demand.`,
     });
   } catch (error) {
     console.error('Error in create-vocab API:', error);
@@ -64,5 +72,16 @@ export async function POST(request: Request) {
       },
       { status: 500 }
     );
+  }
+}
+
+async function processWithAI(rawText: string, provider: 'xai' | 'gemini') {
+  switch (provider) {
+    case 'xai':
+      return processWithXAI(rawText);
+    case 'gemini':
+      return processWithGemini(rawText);
+    default:
+      throw new Error(`Unknown provider: ${provider}`);
   }
 }
