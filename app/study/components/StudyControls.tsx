@@ -1,3 +1,8 @@
+"use client";
+
+import type React from "react";
+import { useRef } from "react";
+
 interface StudyControlsProps {
   onMarkIncorrect: () => void;
   onMarkCorrect: () => void;
@@ -12,17 +17,17 @@ export function StudyControls({
   className = "",
 }: StudyControlsProps) {
   // Basic swipe support for iPad: swipe left = Needs Practice, swipe right = Got It
-  let touchStartX = 0;
-  let touchEndX = 0;
+  const touchStartXRef = useRef(0);
+  const touchEndXRef = useRef(0);
 
   const handleTouchStart: React.TouchEventHandler<HTMLDivElement> = (e) => {
-    touchStartX = e.changedTouches[0].clientX;
+    touchStartXRef.current = e.changedTouches[0].clientX;
   };
   const handleTouchMove: React.TouchEventHandler<HTMLDivElement> = (e) => {
-    touchEndX = e.changedTouches[0].clientX;
+    touchEndXRef.current = e.changedTouches[0].clientX;
   };
   const handleTouchEnd: React.TouchEventHandler<HTMLDivElement> = () => {
-    const dx = touchEndX - touchStartX;
+    const dx = touchEndXRef.current - touchStartXRef.current;
     const threshold = 50; // px
     if (dx <= -threshold && !disabled) {
       onMarkIncorrect();

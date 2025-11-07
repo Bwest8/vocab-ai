@@ -12,16 +12,16 @@ interface StudyWordListProps {
 }
 
 export function StudyWordList({ words, currentIndex, onSelectWord }: StudyWordListProps) {
-  if (words.length === 0) {
-    return null;
-  }
-
   const activeRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     const el = activeRef.current;
     if (!el) return;
     el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
   }, [currentIndex]);
+
+  if (words.length === 0) {
+    return null;
+  }
 
   return (
     <section className="rounded-3xl border border-white/40 bg-white/80 px-3 py-3 shadow-lg backdrop-blur-xl">

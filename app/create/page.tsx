@@ -170,7 +170,7 @@ export default function CreateVocabPage() {
                     id="grade"
                     value={grade}
                     onChange={(e) => setGrade(e.target.value)}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-slate-900 transition-all"
+                    className="w-full h-12 px-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none text-slate-900 bg-white transition-all"
                   >
                     <option value="04">4th Grade</option>
                     <option value="05">5th Grade</option>
