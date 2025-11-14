@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy only package manifests for dependency cache
 COPY package.json bun.lockb* ./
 
-# Install dependencies once; this layer is reused if package.json unchanged
-RUN bun install --frozen-lockfile --production=false
+# Install ALL dependencies (including devDependencies for build)
+RUN bun install --frozen-lockfile
 
 # ===========================
 # 2️⃣ Build stage
