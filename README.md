@@ -21,7 +21,7 @@ AI-powered vocabulary learning for grades 4–6 built with Next.js 16, PostgreSQ
 
 ## Prerequisites
 
-- Node.js 18+ and npm
+- Bun 1.1+
 - PostgreSQL 18 (local or Docker)
 - API keys: Google Gemini, xAI Grok, ElevenLabs
 
@@ -30,8 +30,7 @@ AI-powered vocabulary learning for grades 4–6 built with Next.js 16, PostgreSQ
 ### 1) Install dependencies
 
 ```bash
-cd vocab-ai
-npm install
+bun install
 ```
 
 ### 2) Set up environment variables
@@ -66,7 +65,7 @@ docker compose up -d
 ### 4) Run database migrations
 
 ```bash
-npx prisma migrate dev --name init
+bun x prisma migrate dev --name init
 ```
 
 Creates schema:
@@ -79,13 +78,13 @@ Creates schema:
 ### 5) Generate Prisma client
 
 ```bash
-npx prisma generate
+bun x prisma generate
 ```
 
 ### 6) Start development server
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 Open http://localhost:3000
@@ -299,31 +298,6 @@ Fetch word-by-word progress statistics for a set
 - **4**: Mastered
 - **5**: Expert (consistently correct)
 
-## Development Commands
-
-```bash
-# Start dev server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Database (package.json scripts)
-npm run db:studio
-npm run db:migrate
-npm run db:reset
-npm run db:generate
-npm run db:push        # dev-only schema push
-
-# Docker
-npm run docker:up      # Start PostgreSQL
-npm run docker:down    # Stop PostgreSQL
-npm run docker:logs    # View PostgreSQL logs
-```
-
 ## Next Steps
 
 1) Create a new set: use the Create page (`/create`) and paste raw word text
@@ -341,85 +315,6 @@ npm run docker:logs    # View PostgreSQL logs
 - Some dev configs don't apply with Turbopack; build-time PWA settings are production-only
 - AI processors can be toggled in `/api/vocab/create/route.ts` (xAI Grok default, Gemini fallback)
 - Next.js 16 uses async params - always `await params` in dynamic routes
-
-## License
-
-MIT
-
-## Credits
-
-Built with ❤️ using:
-- Next.js
-- Google Gemini + xAI Grok
-- Prisma
-- Tailwind CSS
-
-## Database Schema
-
-### VocabSet
-- Represents a collection of words (e.g., "Week 1")
-- Fields: name, description, grade, timestamps
-
-### VocabWord
-- Individual vocabulary word
-- Fields: word, definition, pronunciation, partOfSpeech, timestamps
-- Relations: belongs to a vocab set, has many examples, has many progress records
-
-### VocabExample
-- Example sentences and image descriptions for each word
-- Fields: sentence, imageDescription, imageUrl, timestamps
-- Relations: belongs to a vocab word
-
-### StudyProgress
-- Tracks student progress per word
-- Fields: correctCount, incorrectCount, masteryLevel (0-5), lastStudied
-
-## Mastery Levels
-
-- **0**: Not learned / Forgotten
-- **1**: Seen once
-- **2**: Partially learned
-- **3**: Mostly learned
-- **4**: Mastered
-- **5**: Expert (consistently correct)
-
-## Development Commands
-
-```bash
-# Start dev server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Database (package.json scripts)
-npm run db:studio
-npm run db:migrate
-npm run db:reset
-npm run db:generate
-npm run db:push        # dev-only schema push
-
-# Supabase (local)
-# Studio UI: http://localhost:54323/
-# Postgres:   localhost:54322
-```
-
-## Next Steps
-
-1) Create a new set: use the Create page (`/create`) and paste raw word text
-2) Study: review with flashcards (`/study`)
-3) Games: practice modes under `/games` (Definition Match, Reverse Definition, Fill in the Blank, Speed Round, Matching, Word Scramble)
-4) Images: generate per-example illustrations on demand
-
-## Notes & Gotchas
-
-- Image and audio are served via API routes to support custom storage in production (Next.js static server won’t follow symlinks)
-- Set `VOCAB_IMAGES_DIR` and `TTS_CACHE_DIR` to absolute paths
-- Game profiles use `profileKey` (default "default"); there is no userId-based auth
-- Some dev configs don’t apply with Turbopack; build-time PWA settings are production-only
 
 ## License
 
