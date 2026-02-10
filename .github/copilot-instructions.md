@@ -1,7 +1,7 @@
 # Vocab AI - Copilot Instructions
 
 ## Project Overview
-Elementary vocabulary learning app (grades 4-6) using AI-generated content. Next.js 15 + App Router, PostgreSQL via Prisma, Google Gemini (text/image generation), xAI Grok (alternative processor), ElevenLabs (TTS).
+Elementary vocabulary learning app (grades 4-6) using AI-generated content. Next.js 16 + App Router, PostgreSQL via Prisma, Google Gemini (text/image generation), xAI Grok (alternative processor), ElevenLabs (TTS).
 
 ## Architecture Decisions
 
@@ -17,19 +17,19 @@ Elementary vocabulary learning app (grades 4-6) using AI-generated content. Next
 - **Progress Tracking**: Two systems - `StudyProgress` (0-5 mastery) and `GameModeProgress` (per-mode stats)
 - **No userId**: App is single-user by design; `userId` field exists in schema but is always null
 
-### Next.js 15 Specifics
-- **Turbopack Dev Mode**: Run `npm run dev` (uses `--turbopack` flag)
+### Next.js 16 Specifics
+- **Turbopack Dev Mode**: Run `bun run dev` (uses `--turbopack` flag)
 - **PWA Production Only**: `next-pwa` wrapper only active in production builds
-- **Async Params**: Route params are Promises in Next.js 15 - always `await params` in dynamic routes
+- **Async Params**: Route params are Promises in Next.js 16 - always `await params` in dynamic routes
 
 ## Key Workflows
 
 ### Development Setup
 ```bash
-npm install
-npx prisma migrate dev         # Run migrations (requires local Supabase/Postgres)
-npx prisma generate            # Generate client
-npm run dev                    # Start with Turbopack
+bun install
+bunx prisma migrate dev        # Run migrations (requires local Supabase/Postgres)
+bunx prisma generate           # Generate client
+bun run dev                    # Start with Turbopack
 ```
 
 Supabase (local):
@@ -38,7 +38,7 @@ Supabase (local):
 - Ensure your `DATABASE_URL` points to the local Supabase Postgres instance.
 
 ### Database Commands
-- `npm run db:studio` - Prisma Studio GUI
-- `npm run db:push` - Push schema changes (dev only)
-- `npm run db:migrate` - Create new migration
-- `npm run db:reset` - Reset database
+- `bun run db:studio` - Prisma Studio GUI
+- `bun run db:push` - Push schema changes (dev only)
+- `bun run db:migrate` - Create new migration
+- `bun run db:reset` - Reset database
