@@ -44,6 +44,9 @@ next-env.d.ts
 
 # Media storage (inside project - not committed)
 /storage/
+/.local-data/
+/.local-data/vocab-sets/
+/.local-data/tts/
 
 # Public directory backups from migration
 /public/vocab-sets.backup/

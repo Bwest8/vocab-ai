@@ -47,7 +47,6 @@ export default function StudyPage() {
     handleProgress,
     handleOpenImageModal,
     handleCloseImageModal,
-    handleGenerateImage,
     handleSelectExample,
   } = useStudySession();
 
@@ -150,7 +149,6 @@ export default function StudyPage() {
         totalExampleSlots={totalExampleSlots}
         onSelectExample={handleSelectExample}
         onClose={handleCloseImageModal}
-        onGenerateImage={handleGenerateImage}
         isGeneratingSelectedExample={isGeneratingSelectedExample}
         generatingExampleIds={generatingExampleIds}
         imageGenerationError={imageGenerationError}

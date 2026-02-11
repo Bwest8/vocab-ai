@@ -353,9 +353,36 @@ export function useStudySession(): UseStudySessionResult {
       setImageGenerationError("Please select an example to generate an image.");
       return;
     }
+    await generateImageForExample(currentWord, selectedExample);
+  };
 
-    const exampleId = selectedExample.id;
-    const slotIndex = currentExamples.findIndex((example) => example.id === exampleId);
+  const handleSelectExample = (index: number) => {
+    const example = currentExamples[index];
+    if (!example) return;
+    setSelectedExampleIndex(index);
+    setImageGenerationError(null);
+    setImageGenerationNotice(null);
+
+    if (example.imageUrl) {
+      return;
+    }
+
+    if (generatingExampleIds.has(example.id)) {
+      return;
+    }
+
+    if (!currentWord) {
+      return;
+    }
+
+    void generateImageForExample(currentWord, example);
+  };
+
+  const generateImageForExample = async (
+    word: WordWithRelations,
+    example: NonNullable<WordWithRelations["examples"]>[number]
+  ) => {
+    const exampleId = example.id;
 
     setGeneratingExampleIds((prev) => {
       const next = new Set(prev);
@@ -370,7 +397,7 @@ export function useStudySession(): UseStudySessionResult {
 
     try {
       const response = await fetch(
-        `/api/vocab/${currentWord.vocabSetId}/examples/${selectedExample.id}/generate-image`,
+        `/api/vocab/${word.vocabSetId}/examples/${example.id}/generate-image`,
         {
           method: "POST",
         }
@@ -382,25 +409,22 @@ export function useStudySession(): UseStudySessionResult {
         throw new Error(data?.error ?? "Failed to generate image for this example.");
       }
 
-  const updatedExample = data.example as NonNullable<WordWithRelations["examples"]>[number];
+      const updatedExample = data.example as NonNullable<WordWithRelations["examples"]>[number];
 
       setWords((prevWords) =>
-        prevWords.map((word) =>
-          word.id === currentWord.id
+        prevWords.map((wordItem) =>
+          wordItem.id === word.id
             ? {
-                ...word,
-                examples: (word.examples ?? []).map((example) =>
-                  example.id === updatedExample.id
-                    ? { ...example, imageUrl: updatedExample.imageUrl, updatedAt: updatedExample.updatedAt }
-                    : example
+                ...wordItem,
+                examples: (wordItem.examples ?? []).map((exampleItem) =>
+                  exampleItem.id === updatedExample.id
+                    ? { ...exampleItem, imageUrl: updatedExample.imageUrl, updatedAt: updatedExample.updatedAt }
+                    : exampleItem
                 ),
               }
-            : word
+            : wordItem
         )
       );
-
-      // Success notice not needed; the image appearing is sufficient UX.
-      // Intentionally do not set imageGenerationNotice.
     } catch (error) {
       setImageGenerationError(
         error instanceof Error ? error.message : "Unable to generate image for this example."
@@ -414,14 +438,6 @@ export function useStudySession(): UseStudySessionResult {
 
       setGenerationQueue((prev) => prev.filter((id) => id !== exampleId));
     }
-  };
-
-  const handleSelectExample = (index: number) => {
-    const example = currentExamples[index];
-    if (!example) return;
-    setSelectedExampleIndex(index);
-    setImageGenerationError(null);
-    setImageGenerationNotice(null);
   };
 
   return {

@@ -12,7 +12,6 @@ interface StudyImageModalProps {
   totalExampleSlots: number;
   onSelectExample: (index: number) => void;
   onClose: () => void;
-  onGenerateImage: () => void;
   isGeneratingSelectedExample: boolean;
   generatingExampleIds: Set<string>;
   imageGenerationError: string | null;
@@ -27,7 +26,6 @@ export function StudyImageModal({
   totalExampleSlots,
   onSelectExample,
   onClose,
-  onGenerateImage,
   isGeneratingSelectedExample,
   generatingExampleIds,
   imageGenerationError,
@@ -137,39 +135,39 @@ export function StudyImageModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-stretch justify-center p-0 sm:items-center sm:p-4">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
         role="presentation"
       />
 
-      <div className="relative z-10 w-[98%] h-[98%] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative z-10 flex h-[100dvh] w-full min-h-0 flex-col overflow-hidden bg-white shadow-2xl sm:h-[calc(100dvh-1.5rem)] sm:max-h-[980px] sm:w-[98%] sm:rounded-2xl">
         {/* Enhanced Header - Emphasize the Word */}
-        <div className="flex-shrink-0 bg-gradient-to-br from-indigo-600 to-indigo-800 px-6 py-4 shadow-lg">
-          <div className="flex items-start justify-between gap-6">
+        <div className="flex-shrink-0 bg-gradient-to-br from-indigo-600 to-indigo-800 px-4 py-3 shadow-lg sm:px-6 sm:py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-4">
-                <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight">{word.word}</h2>
-                <div className="flex flex-col">
+              <div className="flex flex-wrap items-start gap-2 sm:gap-4">
+                <h2 className="text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl">{word.word}</h2>
+                <div className="flex flex-col pt-1">
                   {word.partOfSpeech && (
                     <span className="inline-block rounded-md bg-white/25 backdrop-blur-sm px-2.5 py-1 text-xs font-semibold text-white tracking-wide">
                       {word.partOfSpeech}
                     </span>
                   )}
                   {word.pronunciation && (
-                    <span className="text-lg text-indigo-200 font-medium mt-1">/{word.pronunciation}/</span>
+                    <span className="mt-1 text-base font-medium text-indigo-200 sm:text-lg">/{word.pronunciation}/</span>
                   )}
                 </div>
               </div>
               {/* Definition */}
               {word.definition && (
-                <p className="mt-3 border-l-4 border-indigo-400/50 pl-4 text-sm md:text-base text-indigo-100 leading-relaxed max-w-3xl italic">{word.definition}</p>
+                <p className="mt-2 max-w-3xl border-l-4 border-indigo-400/50 pl-3 text-xs italic leading-relaxed text-indigo-100 sm:mt-3 sm:pl-4 sm:text-sm md:text-base">{word.definition}</p>
               )}
             </div>
             <button
               onClick={onClose}
-              className="flex-shrink-0 rounded-lg bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-colors w-10 h-10 flex items-center justify-center text-white border border-white/30"
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center self-end rounded-lg border border-white/30 bg-white/20 text-white backdrop-blur-sm transition-colors hover:bg-white/30 sm:self-start"
               aria-label="Close"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,12 +177,12 @@ export function StudyImageModal({
           </div>
         </div>
 
-  <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 bg-gradient-to-br from-slate-50 to-white">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 bg-gradient-to-br from-slate-50 to-white px-3 py-3 sm:space-y-5 sm:px-6 sm:py-5">
           {/* Example Sentence - Prominent */}
-          <div className="bg-white rounded-xl p-5 border border-indigo-200 shadow-sm max-w-5xl mx-auto">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mx-auto w-full max-w-5xl rounded-xl border border-indigo-200 bg-white p-3 shadow-sm sm:p-5">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 sm:h-12 sm:w-12">
+                <svg className="h-5 w-5 text-indigo-600 sm:h-6 sm:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                 </svg>
               </div>
@@ -192,7 +190,7 @@ export function StudyImageModal({
                 <p className="text-xs font-bold text-indigo-600 uppercase tracking-wide mb-2">
                   Example {selectedExampleIndex + 1} of {totalExampleSlots}
                 </p>
-                <p className="text-base md:text-lg leading-relaxed text-slate-800 font-medium">
+                <p className="text-sm font-medium leading-relaxed text-slate-800 sm:text-base md:text-lg">
                   {selectedExample ? selectedExample.sentence : "Select an example below to view"}
                 </p>
               </div>
@@ -200,8 +198,8 @@ export function StudyImageModal({
           </div>
 
           {/* Image Display - 16:9 fixed aspect, full cover */}
-          <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm max-w-5xl mx-auto">
-            <div className="relative w-full aspect-[16/9] bg-slate-100 rounded-xl overflow-hidden">
+          <div className="relative mx-auto w-full max-w-5xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] bg-slate-100 rounded-xl overflow-hidden">
               <AnimatePresence mode="wait">
                 {selectedExample?.imageUrl ? (
                   <div className="absolute inset-0">
@@ -337,14 +335,14 @@ export function StudyImageModal({
           </div>
 
           {/* Example Selector - More Prominent */}
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Select Example Sentence</h3>
+          <div className="mx-auto w-full max-w-5xl">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 sm:mb-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 sm:text-sm">Select Example Sentence</h3>
               <span className="text-xs text-slate-500 font-medium">
                 {examples.filter(e => e?.imageUrl).length} of {examples.length} have images
               </span>
             </div>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3">
               {Array.from({ length: totalExampleSlots }).map((_, index) => {
                 const example = examples[index];
                 const isSelected = index === selectedExampleIndex;
@@ -358,7 +356,7 @@ export function StudyImageModal({
                     disabled={!example}
                     whileHover={example && !isGenerating ? { scale: 1.05 } : {}}
                     whileTap={example && !isGenerating ? { scale: 0.95 } : {}}
-                    className={`relative h-16 rounded-lg border flex flex-col items-center justify-center transition-all font-semibold text-sm ${
+                    className={`relative h-14 rounded-lg border flex flex-col items-center justify-center transition-all font-semibold text-xs sm:h-16 sm:text-sm ${
                       isSelected
                         ? "border-indigo-600 bg-indigo-600 text-white shadow-lg"
                         : hasImage
@@ -368,7 +366,7 @@ export function StudyImageModal({
                       isGenerating ? "border-indigo-400 bg-indigo-100" : ""
                     }`}
                   >
-                    <span className="text-2xl font-bold">{index + 1}</span>
+                    <span className="text-xl font-bold sm:text-2xl">{index + 1}</span>
                     {isGenerating && (
                       <div className="absolute top-1 right-1">
                         <span className="flex h-2 w-2">
@@ -392,8 +390,8 @@ export function StudyImageModal({
             </div>
           </div>
 
-          {/* Generate Button - More Prominent */}
-          <div className="max-w-5xl mx-auto space-y-3">
+          {/* Feedback area */}
+          <div className="sticky bottom-0 mx-auto w-full max-w-5xl space-y-3 bg-gradient-to-t from-white via-white to-transparent pb-1 pt-2">
             <AnimatePresence mode="wait">
               {imageGenerationError && (
                 <motion.div
@@ -410,33 +408,7 @@ export function StudyImageModal({
                 </motion.div>
               )}
             </AnimatePresence>
-
-            <motion.button
-              onClick={onGenerateImage}
-              disabled={!selectedExample || isGeneratingSelectedExample}
-              whileHover={!isGeneratingSelectedExample && selectedExample ? { scale: 1.01 } : {}}
-              whileTap={!isGeneratingSelectedExample && selectedExample ? { scale: 0.99 } : {}}
-              className="w-full py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold text-sm md:text-base hover:from-indigo-700 hover:to-indigo-800 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg disabled:shadow-none flex items-center justify-center gap-3"
-            >
-              {isGeneratingSelectedExample ? (
-                <>
-                  <motion.span 
-                    className="h-6 w-6 border-3 border-white/50 border-t-white rounded-full"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  />
-                  <span>Creating Visual...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={selectedExample?.imageUrl ? "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" : "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"} />
-                  </svg>
-                  <span>{selectedExample?.imageUrl ? "Regenerate Visual" : "Generate Visual for This Example"}</span>
-                </>
-              )}
-            </motion.button>
-                      </div>
+          </div>
         </div>
       </div>
     </div>

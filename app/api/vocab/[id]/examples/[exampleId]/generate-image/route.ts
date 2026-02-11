@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { unlink } from "node:fs/promises";
-import path from "node:path";
 import { prisma } from "@/lib/prisma";
 import {
   generateExampleImage as generateGeminiExampleImage,
@@ -8,7 +6,6 @@ import {
 } from "@/lib/geminiCreateImage";
 import { generateExampleImage as generateFalExampleImage } from "@/lib/falCreateImage";
 
-const VOCAB_IMAGES_DIR_ENV = process.env.VOCAB_IMAGES_DIR;
 const SUPPORTED_PROVIDERS = ["gemini", "fal"] as const;
 const SUPPORTED_ASPECT_RATIOS = ["21:9", "16:9", "4:3", "3:2", "1:1", "9:16", "3:4", "2:3", "5:4", "4:5"] as const;
 
@@ -131,25 +128,11 @@ export async function POST(
       );
     }
 
-    // Delete old image file if it exists
     if (example.imageUrl) {
-      if (!VOCAB_IMAGES_DIR_ENV) {
-        console.error("Vocab images directory is not configured");
-        return NextResponse.json({ error: "Images directory is not configured" }, { status: 500 });
-      }
-
-      const resolvedBaseDir = path.resolve(VOCAB_IMAGES_DIR_ENV);
-      const urlPath = example.imageUrl.replace(/^\/api\/images\/vocab-sets\//, '').replace(/^\/vocab-sets\//, '');
-      const oldImagePath = path.join(resolvedBaseDir, urlPath);
-      
-      try {
-        await unlink(oldImagePath);
-      } catch (err) {
-        // File might not exist, that's okay
-        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-          console.warn(`Failed to delete old image ${oldImagePath}:`, err);
-        }
-      }
+      return NextResponse.json(
+        { error: "This example already has a generated visual. Regeneration is disabled." },
+        { status: 409 }
+      );
     }
 
     const imageGenerator =

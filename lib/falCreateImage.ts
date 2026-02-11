@@ -1,4 +1,4 @@
-import { fal } from "@fal-ai/client";
+import { ApiError, ValidationError, fal } from "@fal-ai/client";
 import mime from "mime";
 import { mkdir, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -19,7 +19,7 @@ export interface GeneratedImageResult {
   mimeType: string;
 }
 
-type SeedreamImageSize =
+type FalImageSize =
   | "square_hd"
   | "square"
   | "portrait_4_3"
@@ -28,18 +28,19 @@ type SeedreamImageSize =
   | "landscape_16_9"
   | "auto_2K";
 
-type SeedreamImageOutput = {
+type FalImageOutput = {
   url?: string;
   content_type?: string;
 };
 
-type SeedreamTextToImageOutput = {
-  images?: SeedreamImageOutput[];
+type FalTextToImageOutput = {
+  images?: FalImageOutput[];
 };
 
-const FAL_SEEDREAM_MODEL_ID = "fal-ai/bytedance/seedream/v4.5/text-to-image";
+const DEFAULT_FAL_IMAGE_MODEL_ID = "fal-ai/bytedance/seedream/v4.5/text-to-image";
+const MAX_QWEN_PROMPT_LENGTH = 780;
 
-const ASPECT_RATIO_TO_IMAGE_SIZE: Record<NonNullable<GenerateExampleImageParams["aspectRatio"]>, SeedreamImageSize> = {
+const ASPECT_RATIO_TO_IMAGE_SIZE: Record<NonNullable<GenerateExampleImageParams["aspectRatio"]>, FalImageSize> = {
   "21:9": "landscape_16_9",
   "16:9": "landscape_16_9",
   "4:3": "landscape_4_3",
@@ -82,6 +83,10 @@ function sanitizeForFileName(value: string): string {
     .slice(0, 40) || "image";
 }
 
+function resolveFalImageModelId(): string {
+  return process.env.FAL_IMAGE_MODEL_ID?.trim() || DEFAULT_FAL_IMAGE_MODEL_ID;
+}
+
 function buildPrompt(word: string, imageDescription: string, aspectRatio: NonNullable<GenerateExampleImageParams["aspectRatio"]>): string {
   return `You are an expert illustrator creating vibrant, educational illustrations for students aged 10-12.
 Create a single image that clearly depicts this vocabulary word: "${word}".
@@ -99,32 +104,128 @@ Style and quality requirements:
 - Do not add text in the image unless essential.`;
 }
 
-async function callSeedream(prompt: string, imageSize: SeedreamImageSize): Promise<SeedreamTextToImageOutput> {
+function buildQwenPrompt(
+  word: string,
+  imageDescription: string,
+  aspectRatio: NonNullable<GenerateExampleImageParams["aspectRatio"]>
+): string {
+  const compactPrompt = `Educational illustration for students age 10-12 of the vocabulary word "${word}".
+Scene: ${imageDescription.trim()}
+Style: vibrant, child-friendly illustration with strong focal point, expressive characters, dynamic action, and 2-3 contextual background details.
+Composition: fit ${aspectRatio} aspect ratio with no text overlay.`;
+
+  if (compactPrompt.length <= MAX_QWEN_PROMPT_LENGTH) {
+    return compactPrompt;
+  }
+
+  return compactPrompt.slice(0, MAX_QWEN_PROMPT_LENGTH).trimEnd();
+}
+
+function buildPromptForModel(
+  modelId: string,
+  word: string,
+  imageDescription: string,
+  aspectRatio: NonNullable<GenerateExampleImageParams["aspectRatio"]>
+): string {
+  if (modelId.includes("qwen-image-max")) {
+    return buildQwenPrompt(word, imageDescription, aspectRatio);
+  }
+  return buildPrompt(word, imageDescription, aspectRatio);
+}
+
+function safeStringify(value: unknown): string {
+  try {
+    if (typeof value === "string") {
+      return value;
+    }
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function trimForError(value: string, maxLength = 1800): string {
+  if (value.length <= maxLength) {
+    return value;
+  }
+  return `${value.slice(0, maxLength)}...`;
+}
+
+function formatFalApiError(error: ApiError<unknown>): string {
+  if (error instanceof ValidationError) {
+    const fields = error.fieldErrors;
+    if (fields.length > 0) {
+      return trimForError(safeStringify(fields));
+    }
+  }
+
+  const body = error.body as { message?: unknown; detail?: unknown } | undefined;
+  const bestCandidate = body?.detail ?? body?.message ?? error.message;
+  return trimForError(safeStringify(bestCandidate));
+}
+
+function buildFalInput(modelId: string, prompt: string, imageSize: FalImageSize) {
+  const baseInput = {
+    prompt,
+    image_size: imageSize,
+    num_images: 1,
+    enable_safety_checker: true,
+  };
+
+  if (modelId.includes("qwen-image-max")) {
+    return {
+      ...baseInput,
+      output_format: "png" as const,
+    };
+  }
+
+  // Seedream supports multi-image knobs; keep previous behavior there.
+  if (modelId.includes("seedream")) {
+    return {
+      ...baseInput,
+      max_images: 1,
+    };
+  }
+
+  return baseInput;
+}
+
+async function callFalImageModel(modelId: string, prompt: string, imageSize: FalImageSize): Promise<FalTextToImageOutput> {
   const subscribe = fal.subscribe as unknown as (
     endpointId: string,
     options: {
-      input: {
-        prompt: string;
-        image_size?: SeedreamImageSize;
-        num_images?: number;
-        max_images?: number;
-        enable_safety_checker?: boolean;
-      };
+      input: Record<string, unknown>;
       logs?: boolean;
     }
-  ) => Promise<{ data: SeedreamTextToImageOutput }>;
+  ) => Promise<{ data: FalTextToImageOutput }>;
 
-  const result = await subscribe(FAL_SEEDREAM_MODEL_ID, {
-    input: {
-      prompt,
-      image_size: imageSize,
-      num_images: 1,
-      max_images: 1,
-      enable_safety_checker: true,
-    },
-  });
+  try {
+    const result = await subscribe(modelId, {
+      input: buildFalInput(modelId, prompt, imageSize),
+    });
 
-  return result.data;
+    return result.data;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      const providerMessage = formatFalApiError(error);
+
+      if (error.status === 401) {
+        throw new Error(
+          `FAL authentication failed for model "${modelId}". Verify FAL_KEY and confirm your account has access to this model. ${providerMessage}`
+        );
+      }
+
+      if (error.status === 403) {
+        throw new Error(
+          `FAL access denied for model "${modelId}". Your key is valid but this model may require additional access. ${providerMessage}`
+        );
+      }
+
+      throw new Error(`FAL image request failed (${error.status}) for "${modelId}": ${providerMessage}`);
+    }
+
+    throw error;
+  }
 }
 
 export async function generateExampleImage({
@@ -138,20 +239,22 @@ export async function generateExampleImage({
   }
 
   configureFalClient();
+  const modelId = resolveFalImageModelId();
 
-  const seedreamOutput = await callSeedream(
-    buildPrompt(word, imageDescription, aspectRatio),
+  const falOutput = await callFalImageModel(
+    modelId,
+    buildPromptForModel(modelId, word, imageDescription, aspectRatio),
     ASPECT_RATIO_TO_IMAGE_SIZE[aspectRatio]
   );
 
-  const generatedImage = seedreamOutput.images?.find((image) => Boolean(image?.url));
+  const generatedImage = falOutput.images?.find((image) => Boolean(image?.url));
   if (!generatedImage?.url) {
-    throw new Error("Seedream did not return any image URL.");
+    throw new Error("FAL model did not return any image URL.");
   }
 
   const imageResponse = await fetch(generatedImage.url);
   if (!imageResponse.ok) {
-    throw new Error(`Failed to fetch image from Seedream URL: ${imageResponse.statusText}`);
+    throw new Error(`Failed to fetch image from FAL image URL: ${imageResponse.statusText}`);
   }
 
   const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
