@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { processVocabularyWords as processWithXAI } from '@/lib/xaiVocabProcessor';
 import { processVocabularyWords as processWithGemini } from '@/lib/gemini';
 import { prisma } from '@/lib/prisma';
+import { cacheTags } from '@/lib/data/cache';
 import type { ProcessVocabRequest } from '@/lib/types';
 
 interface ProcessVocabRequestWithProvider extends ProcessVocabRequest {
@@ -54,6 +56,9 @@ export async function POST(request: Request) {
         words: { include: { examples: true } },
       },
     });
+
+    // Invalidate vocab sets list cache
+    await revalidateTag(cacheTags.vocabSets);
 
     return NextResponse.json({
       success: true,

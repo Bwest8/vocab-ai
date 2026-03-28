@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { cacheTags } from "@/lib/data/cache";
 import path from "node:path";
 import { unlink } from "node:fs/promises";
 
@@ -73,6 +75,10 @@ export async function PATCH(
       },
     });
 
+    // Invalidate caches
+    await revalidateTag(cacheTags.vocabSet(id));
+    await revalidateTag(cacheTags.vocabSets);
+
     return NextResponse.json(updatedSet);
   } catch (error) {
     console.error('Error updating vocabulary set:', error);
@@ -138,6 +144,10 @@ export async function DELETE(
     await prisma.vocabSet.delete({
       where: { id },
     });
+
+    // Invalidate caches
+    await revalidateTag(cacheTags.vocabSet(id));
+    await revalidateTag(cacheTags.vocabSets);
 
     return NextResponse.json({ 
       success: true, 
