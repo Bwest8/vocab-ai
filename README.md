@@ -121,6 +121,8 @@ What it does:
 Notes:
 - Compose reads substitution variables from `.env` automatically
 - Avoid `~` in path values inside `.env`; use absolute paths instead
+- For beta/production-style deployments, use a stable persistent mount for PostgreSQL data. Do not rely on an ephemeral container filesystem.
+- `bun run db:reset` is intentionally guarded and will refuse to wipe data unless `ALLOW_DB_RESET=true` is set or `bun run db:reset:force` is used deliberately.
 
 ## Project Structure
 
