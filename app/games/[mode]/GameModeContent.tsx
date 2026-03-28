@@ -1,0 +1,130 @@
+"use client";
+
+import { useMemo, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import type { GameMode } from "@/lib/types";
+import {
+  DefinitionMatchGame,
+  FillInTheBlankGame,
+  ReverseDefinitionGame,
+  SpeedRoundGame,
+  MatchingGame,
+  WordScrambleGame,
+} from "@/app/games/components";
+import { useGamesSession } from "@/lib/hooks/useGamesSession";
+import { useGameProgress } from "@/lib/hooks/useGameProgress";
+
+export default function GameModeContent() {
+  const params = useParams();
+  const router = useRouter();
+  const modeParam = (params?.mode as string) || "definition-match";
+
+  const isValidMode = (
+    [
+      "definition-match",
+      "reverse-definition",
+      "fill-in-the-blank",
+      "speed-round",
+      "matching",
+      "word-scramble",
+    ] as const
+  ).includes(modeParam as GameMode);
+
+  const mode: GameMode = isValidMode
+    ? (modeParam as GameMode)
+    : "definition-match";
+
+  const {
+    selectedSetId,
+    weeklyWords,
+    reviewWords,
+    words,
+    errorMessage,
+  } = useGamesSession();
+
+  const progress = useGameProgress(selectedSetId || null);
+
+  useEffect(() => {
+    if (!isValidMode) {
+      router.replace("/games");
+    }
+  }, [isValidMode, router]);
+
+  const modeComponent = useMemo(() => {
+    const weeklyKey = weeklyWords.map((word) => word.id).join("-") || "none";
+    const reviewKey = reviewWords.map((word) => word.id).join("-") || "none";
+    const allKey = words.map((word) => word.id).join("-") || "none";
+    const componentKey = [
+      mode,
+      selectedSetId ?? "none",
+      weeklyKey,
+      reviewKey,
+      allKey,
+    ].join(":");
+
+    const commonProps = {
+      weeklyWords,
+      reviewWords,
+      allWords: words,
+      onResult: progress.registerResult,
+    } as const;
+
+    switch (mode) {
+      case "definition-match":
+        return <DefinitionMatchGame key={componentKey} {...commonProps} />;
+      case "reverse-definition":
+        return <ReverseDefinitionGame key={componentKey} {...commonProps} />;
+      case "fill-in-the-blank":
+        return <FillInTheBlankGame key={componentKey} {...commonProps} />;
+      case "speed-round":
+        return <SpeedRoundGame key={componentKey} {...commonProps} />;
+      case "matching":
+        return <MatchingGame key={componentKey} {...commonProps} />;
+      case "word-scramble":
+        return <WordScrambleGame key={componentKey} {...commonProps} />;
+      default:
+        return <MatchingGame key={`${componentKey}-fallback`} {...commonProps} />;
+    }
+  }, [mode, selectedSetId, weeklyWords, reviewWords, words, progress.registerResult]);
+
+  const titleMap: Record<GameMode, string> = {
+    "definition-match": "Definition Match",
+    "reverse-definition": "Reverse Definition",
+    "fill-in-the-blank": "Fill in the Blank",
+    "speed-round": "Speed Round",
+    matching: "Matching Game",
+    "word-scramble": "Word Scramble",
+  };
+
+  return (
+    <>
+      {/* Slim top bar to maximize game area */}
+      <div className="sticky top-0 z-20 border-b border-slate-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-10 items-center justify-between py-0.5">
+            <button
+              type="button"
+              aria-label="Back to Games"
+              onClick={() => router.push("/games")}
+              className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+            >
+              <span className="text-lg">←</span>
+              Back to Games
+            </button>
+            <div className="text-sm font-bold text-slate-800">
+              {titleMap[mode]}
+            </div>
+            <div className="w-[110px]" aria-hidden />
+          </div>
+        </div>
+      </div>
+
+      <div className="min-h-[100svh] bg-gradient-to-br from-indigo-50 via-slate-100 to-white landscape:h-[100vh] landscape:overflow-hidden">
+        {/* Game area - full height in landscape */}
+        <div className="h-full landscape:flex landscape:flex-col">
+          {modeComponent}
+        </div>
+      </div>
+    </>
+  );
+}

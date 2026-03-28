@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { revalidateTag } from "next/cache";
 import {
   generateExampleImage as generateGeminiExampleImage,
   type GenerateExampleImageParams,
@@ -153,6 +154,9 @@ export async function POST(
         imageUrl: generated.publicUrl,
       },
     });
+
+    // Invalidate cached image data since we generated a new one
+    await revalidateTag(`example-image-${exampleId}`);
 
     return NextResponse.json({
       success: true,

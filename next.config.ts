@@ -8,9 +8,7 @@ const baseConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   turbopack: {},
-  experimental: {
-    cacheComponents: true,
-  },
+  cacheComponents: true,
 };
 
 let config: NextConfig = baseConfig;

@@ -8,11 +8,6 @@ import type {
   WordWithRelations,
 } from "@/lib/study/types";
 
-interface UseStudySessionOptions {
-  initialVocabSets?: VocabSetSummary[];
-  initialSet?: { id: string; name: string; words: WordWithRelations[] } | null;
-}
-
 interface UseStudySessionResult {
   vocabSets: VocabSetSummary[];
   setState: FetchState;
@@ -53,14 +48,13 @@ interface UseStudySessionResult {
   handleSelectExample: (index: number) => void;
 }
 
-export function useStudySession(options: UseStudySessionOptions = {}): UseStudySessionResult {
-  const { initialVocabSets, initialSet } = options;
-  const [vocabSets, setVocabSets] = useState<VocabSetSummary[]>(initialVocabSets ?? []);
-  const [setState, setSetState] = useState<FetchState>(initialVocabSets ? "idle" : "loading");
-  const [wordsState, setWordsState] = useState<FetchState>(initialSet ? "idle" : "loading");
-  const [selectedSetId, setSelectedSetId] = useState(initialSet?.id ?? "");
-  const [selectedSetName, setSelectedSetName] = useState(initialSet?.name ?? "");
-  const [words, setWords] = useState<WordWithRelations[]>(initialSet?.words ?? []);
+export function useStudySession(): UseStudySessionResult {
+  const [vocabSets, setVocabSets] = useState<VocabSetSummary[]>([]);
+  const [setState, setSetState] = useState<FetchState>("idle");
+  const [wordsState, setWordsState] = useState<FetchState>("idle");
+  const [selectedSetId, setSelectedSetId] = useState("");
+  const [selectedSetName, setSelectedSetName] = useState("");
+  const [words, setWords] = useState<WordWithRelations[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -75,31 +69,6 @@ export function useStudySession(options: UseStudySessionOptions = {}): UseStudyS
   const [recentWinWordIdsSet, setRecentWinWordIdsSet] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
-    // Skip fetching if initial data is provided
-    if (initialVocabSets && initialVocabSets.length > 0) {
-      // If we have initial data but no initialSet selected, select the latest set
-      if (!initialSet && !selectedSetId) {
-        // Find the vocab set with the highest lesson number
-        const latestSet = initialVocabSets.reduce((latest, current) => {
-          // Extract lesson number from name (e.g., "Lesson 1" -> 1)
-          const currentMatch = current.name.match(/lesson\s+(\d+)/i);
-          const latestMatch = latest.name.match(/lesson\s+(\d+)/i);
-          
-          if (!currentMatch) return latest;
-          if (!latestMatch) return current;
-          
-          const currentNum = parseInt(currentMatch[1], 10);
-          const latestNum = parseInt(latestMatch[1], 10);
-          
-          return currentNum > latestNum ? current : latest;
-        }, initialVocabSets[0]);
-        
-        setSelectedSetId(latestSet.id);
-        setSelectedSetName(latestSet.name);
-      }
-      return;
-    }
-
     let active = true;
 
     const fetchSets = async () => {
@@ -152,17 +121,12 @@ export function useStudySession(options: UseStudySessionOptions = {}): UseStudyS
     return () => {
       active = false;
     };
-  }, [initialVocabSets, initialSet]);
+  }, []);
 
   useEffect(() => {
     if (!selectedSetId) {
       setWords([]);
       setSelectedSetName("");
-      return;
-    }
-
-    // Skip fetching if initialSet matches the selected set
-    if (initialSet && initialSet.id === selectedSetId && words.length > 0) {
       return;
     }
 
@@ -201,7 +165,7 @@ export function useStudySession(options: UseStudySessionOptions = {}): UseStudyS
     return () => {
       active = false;
     };
-  }, [selectedSetId, initialSet]);
+  }, [selectedSetId]);
 
   const currentWord = useMemo(() => words[currentIndex] ?? null, [words, currentIndex]);
   const currentExamples = useMemo(
