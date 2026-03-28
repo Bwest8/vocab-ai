@@ -16,11 +16,9 @@ function loadEnvFile(filename: string, override = false) {
 loadEnvFile(".env");
 loadEnvFile(".env.local", true);
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL is not set. Define it in the environment, .env, or .env.local before running Prisma commands."
-  );
-}
+const databaseUrl =
+  process.env.DATABASE_URL ??
+  "postgresql://postgres:postgres@127.0.0.1:5432/vocab_ai";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -28,6 +26,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env.DATABASE_URL,
+    url: databaseUrl,
   },
 });
