@@ -3,7 +3,7 @@ set -euo pipefail
 
 IMAGE_NAME="${IMAGE_NAME:-vocab-ai:local-deploy}"
 REMOTE_IMAGE_NAME="${REMOTE_IMAGE_NAME:-vocabai-frontend-kpp21a:latest}"
-REMOTE_HOST="${REMOTE_HOST:-brian@192.168.1.26}"
+REMOTE_HOST="${REMOTE_HOST:-zima-vocab}"
 REMOTE_TMP_PATH="${REMOTE_TMP_PATH:-/tmp/vocab-ai-local-deploy.tar.gz}"
 REMOTE_SERVICE_NAME="${REMOTE_SERVICE_NAME:-vocabai-frontend-kpp21a}"
 ARCHIVE_PATH="${ARCHIVE_PATH:-/tmp/vocab-ai-local-deploy.tar.gz}"
@@ -41,13 +41,13 @@ log "Copying archive to $REMOTE_HOST:$REMOTE_TMP_PATH"
 scp $SSH_OPTS "$ARCHIVE_PATH" "$REMOTE_HOST:$REMOTE_TMP_PATH"
 
 log "Loading image on remote host and updating service $REMOTE_SERVICE_NAME"
-ssh -tt $SSH_OPTS "$REMOTE_HOST" bash -lc "'
+ssh $SSH_OPTS "$REMOTE_HOST" bash -lc "'
 set -euo pipefail
-sudo docker load -i \"$REMOTE_TMP_PATH\"
-sudo docker tag \"$IMAGE_NAME\" \"$REMOTE_IMAGE_NAME\"
-sudo docker service update --image \"$REMOTE_IMAGE_NAME\" \"$REMOTE_SERVICE_NAME\"
-sudo docker service ps \"$REMOTE_SERVICE_NAME\"
+docker load -i \"$REMOTE_TMP_PATH\"
+docker tag \"$IMAGE_NAME\" \"$REMOTE_IMAGE_NAME\"
+docker service update --image \"$REMOTE_IMAGE_NAME\" \"$REMOTE_SERVICE_NAME\"
+docker service ps \"$REMOTE_SERVICE_NAME\"
 '"
 
 log "Deployment command completed. Check service logs if needed:"
-printf '  ssh %s %q\n' "$REMOTE_HOST" "sudo docker service logs --tail 100 $REMOTE_SERVICE_NAME"
+printf '  ssh %s %q\n' "$REMOTE_HOST" "docker service logs --tail 100 $REMOTE_SERVICE_NAME"
