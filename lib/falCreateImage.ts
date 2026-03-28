@@ -164,7 +164,23 @@ function formatFalApiError(error: ApiError<unknown>): string {
   return trimForError(safeStringify(bestCandidate));
 }
 
-function buildFalInput(modelId: string, prompt: string, imageSize: FalImageSize) {
+function buildFalInput(
+  modelId: string,
+  prompt: string,
+  imageSize: FalImageSize,
+  aspectRatio: NonNullable<GenerateExampleImageParams["aspectRatio"]>
+) {
+  if (modelId.includes("nano-banana-2")) {
+    return {
+      prompt,
+      aspect_ratio: aspectRatio,
+      num_images: 1,
+      output_format: "png" as const,
+      resolution: "1K" as const,
+      limit_generations: true,
+    };
+  }
+
   const baseInput = {
     prompt,
     image_size: imageSize,
@@ -190,7 +206,12 @@ function buildFalInput(modelId: string, prompt: string, imageSize: FalImageSize)
   return baseInput;
 }
 
-async function callFalImageModel(modelId: string, prompt: string, imageSize: FalImageSize): Promise<FalTextToImageOutput> {
+async function callFalImageModel(
+  modelId: string,
+  prompt: string,
+  imageSize: FalImageSize,
+  aspectRatio: NonNullable<GenerateExampleImageParams["aspectRatio"]>
+): Promise<FalTextToImageOutput> {
   const subscribe = fal.subscribe as unknown as (
     endpointId: string,
     options: {
@@ -201,7 +222,7 @@ async function callFalImageModel(modelId: string, prompt: string, imageSize: Fal
 
   try {
     const result = await subscribe(modelId, {
-      input: buildFalInput(modelId, prompt, imageSize),
+      input: buildFalInput(modelId, prompt, imageSize, aspectRatio),
     });
 
     return result.data;
@@ -244,7 +265,8 @@ export async function generateExampleImage({
   const falOutput = await callFalImageModel(
     modelId,
     buildPromptForModel(modelId, word, imageDescription, aspectRatio),
-    ASPECT_RATIO_TO_IMAGE_SIZE[aspectRatio]
+    ASPECT_RATIO_TO_IMAGE_SIZE[aspectRatio],
+    aspectRatio
   );
 
   const generatedImage = falOutput.images?.find((image) => Boolean(image?.url));
