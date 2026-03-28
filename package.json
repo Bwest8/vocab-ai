@@ -16,6 +16,7 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
+    "deploy:zima": "./deploy-local-to-zima.sh",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "lint:fix": "eslint . --fix"
