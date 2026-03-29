@@ -1,6 +1,6 @@
 # 🎓 Vocab AI
 
-AI-powered vocabulary learning for grades 4–6 built with Next.js 16, PostgreSQL (Prisma), Google Gemini, xAI Grok, and ElevenLabs.
+AI-powered vocabulary learning for grades 4–6 built with Next.js 16 (Cache Components), PostgreSQL (Prisma), Google Gemini, xAI Grok, and ElevenLabs.
 
 ## Features
 
@@ -10,14 +10,16 @@ AI-powered vocabulary learning for grades 4–6 built with Next.js 16, PostgreSQ
 - 🎴 Flashcards and 📊 mastery tracking (0–5)
 - 🎮 Multiple game modes with scoring and a weekly practice profile
 - 💾 Custom storage for audio/images served via API routes (production safe)
+- ⚡ Next.js 16 Cache Components — automatic caching with cacheLife profiles and smart invalidation
 
 ## Tech Stack
 
-- Framework: Next.js 16 (App Router, Turbopack in dev)
+- Framework: Next.js 16 (App Router, Turbopack in dev, Cache Components)
 - AI: xAI Grok (default) for text processing, Google Gemini as fallback; Gemini 2.5 Flash Image for images
 - Database: PostgreSQL 18 via Prisma ORM
 - Styling: Tailwind CSS v4 + shadcn/ui base components
 - Language: TypeScript
+- Caching: Next.js 16 Cache Components (`'use cache'`, `cacheLife`, `cacheTag`)
 
 ## Prerequisites
 
@@ -65,6 +67,8 @@ docker compose up -d
 ### 4) Run database migrations
 
 ```bash
+bun run db:migrate
+# or for first-time setup:
 bun x prisma migrate dev --name init
 ```
 
@@ -75,6 +79,12 @@ Creates schema:
 - `study_progress` (0–5 mastery)
 - `game_profiles` and `game_mode_progress` (weekly practice)
 
+**Database reset (guarded):**
+```bash
+bun run db:reset          # Interactive confirmation required
+bun run db:reset:force    # Skip confirmation (dangerous!)
+```
+
 ### 5) Generate Prisma client
 
 ```bash
@@ -84,10 +94,21 @@ bun x prisma generate
 ### 6) Start development server
 
 ```bash
-bun run dev
+bun run dev       # Development with Turbopack
+bun run build     # Production build (webpack)
+bun run start     # Start production server
 ```
 
 Open http://localhost:3000
+
+**Available npm scripts:**
+- `bun run db:push` — Push schema changes to database
+- `bun run db:migrate` — Run Prisma migrations
+- `bun run db:studio` — Open Prisma Studio
+- `bun run db:generate` — Regenerate Prisma client
+- `bun run db:reset` — Guarded database reset
+- `bun run docker:up` — Start Docker Compose services
+- `bun run deploy:zima` — Deploy to Zima (local build)
 
 ## Docker Compose
 
@@ -124,6 +145,24 @@ Notes:
 - For beta/production-style deployments, use a stable persistent mount for PostgreSQL data. Do not rely on an ephemeral container filesystem.
 - `bun run db:reset` is intentionally guarded and will refuse to wipe data unless `ALLOW_DB_RESET=true` is set or `bun run db:reset:force` is used deliberately.
 
+## Deployment (Zima/Dokploy)
+
+For production deployment to a ZimaBlade or Dokploy instance via local build:
+
+```bash
+bun run deploy:zima
+```
+
+This script (`deploy-local-to-zima.sh`):
+1. Builds the Docker image locally (faster than on-server builds)
+2. Compresses and copies the image to the remote host via SCP
+3. Loads the image and updates the Docker Swarm service
+
+Requirements:
+- `zima-vocab` SSH alias configured in `~/.ssh/config`
+- Docker context on local machine
+- Remote host with Docker Swarm and existing service named `vocabai-frontend-kpp21a`
+
 ## Project Structure
 
 ```
@@ -150,6 +189,7 @@ vocab-ai/
 │   │   ├── Navigation.tsx
 │   │   ├── HamburgerMenu.tsx
 │   │   ├── PageHeader.tsx
+│   │   ├── VocabSetSelector.tsx                      # Async server component with caching
 │   │   ├── GameDashboard.tsx
 │   │   └── GameModeSelector.tsx
 │   ├── games/
@@ -178,6 +218,10 @@ vocab-ai/
 │   ├── layout.tsx
 │   └── page.tsx                                      # Homepage
 ├── lib/
+│   ├── data/
+│   │   ├── cache.ts                                  # Cache profiles + tag helpers
+│   │   ├── vocab.ts                                  # Cached vocab data fetching
+│   │   └── images.ts                                 # Cached image data fetching
 │   ├── hooks/
 │   │   ├── useGameProgress.ts
 │   │   ├── useGamesSession.ts
@@ -199,6 +243,7 @@ vocab-ai/
 ├── components.json                                   # shadcn/ui config
 ├── dockerfile
 ├── docker-compose.yml
+├── deploy-local-to-zima.sh                           # Local build + Zima deploy script
 ├── next.config.ts
 ├── package.json
 ├── tailwind.config.mjs
@@ -309,6 +354,42 @@ Fetch word-by-word progress statistics for a set
 5) Manage: edit and curate vocabulary sets at `/manage`
 6) Parent Dashboard: track progress and print activities at `/parent`
 
+## Caching Strategy (Next.js 16 Cache Components)
+
+The app uses Next.js 16's Cache Components for automatic, granular caching:
+
+### Cache Profiles (`lib/data/cache.ts`)
+
+| Profile | Duration | Use Case |
+|---------|----------|----------|
+| `vocabSets` | hours | Vocabulary sets (rarely change) |
+| `wordDefinitions` | hours | Word definitions (static once created) |
+| `generatedImages` | days | Generated images (expensive to recreate) |
+| `userProgress` | minutes | User progress (changes frequently) |
+| `gameState` | seconds | Game state (very dynamic) |
+
+### Cached Data Functions (`lib/data/vocab.ts`)
+
+- `getVocabSets()` — cached list of all vocab sets
+- `getVocabSetWithWords(id)` — cached single set with words/examples
+- `getWordDetails(wordId)` — cached word with examples
+
+### Cache Invalidation
+
+Mutations automatically invalidate relevant cache tags:
+- Creating a vocab set → revalidates `vocab-sets` tag
+- Updating/deleting a set → revalidates specific set tags
+- No manual cache management needed
+
+### Using Cached Components
+
+```tsx
+import { VocabSetSelector } from '@/app/components/VocabSetSelector';
+
+// In a server component — data is automatically cached
+<VocabSetSelector selectedSetId={currentSet} />
+```
+
 ## Notes & Gotchas
 
 - Image and audio are served via API routes to support custom storage in production (Next.js static server won't follow symlinks)
@@ -316,7 +397,10 @@ Fetch word-by-word progress statistics for a set
 - Game profiles use `profileKey` (default "default"); there is no userId-based auth
 - Some dev configs don't apply with Turbopack; build-time PWA settings are production-only
 - AI processors can be toggled in `/api/vocab/create/route.ts` (xAI Grok default, Gemini fallback)
-- Next.js 16 uses async params - always `await params` in dynamic routes
+- Next.js 16 uses async params — always `await params` in dynamic routes
+- Cache Components are enabled via `cacheComponents: true` in `next.config.ts`
+- Cached data functions use `'use cache'` directive and `cacheLife()` profiles
+- Cache invalidation happens automatically on mutations via `revalidateTag()`
 
 ## License
 
