@@ -76,8 +76,8 @@ export async function PATCH(
     });
 
     // Invalidate caches
-    await revalidateTag(cacheTags.vocabSet(id));
-    await revalidateTag(cacheTags.vocabSets);
+    revalidateTag(cacheTags.vocabSet(id), 'max');
+    revalidateTag(cacheTags.vocabSets, 'max');
 
     return NextResponse.json(updatedSet);
   } catch (error) {
@@ -146,8 +146,8 @@ export async function DELETE(
     });
 
     // Invalidate caches
-    await revalidateTag(cacheTags.vocabSet(id));
-    await revalidateTag(cacheTags.vocabSets);
+    revalidateTag(cacheTags.vocabSet(id), 'max');
+    revalidateTag(cacheTags.vocabSets, 'max');
 
     return NextResponse.json({ 
       success: true, 

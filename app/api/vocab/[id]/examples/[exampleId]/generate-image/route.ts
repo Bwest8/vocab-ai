@@ -156,7 +156,7 @@ export async function POST(
     });
 
     // Invalidate cached image data since we generated a new one
-    await revalidateTag(`example-image-${exampleId}`);
+    revalidateTag(`example-image-${exampleId}`, 'max');
 
     return NextResponse.json({
       success: true,

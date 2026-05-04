@@ -168,9 +168,8 @@ export function StudyFlashcard({
     speakInProgressRef.current[key] = true;
     setLoading(key, true);
     try {
-      // Use our cached TTS API endpoint
-      const voiceId = '67oeJmj7jIMsdE6yXPr5'; // Current voice ID
-      const response = await fetch(`/api/tts?text=${encodeURIComponent(text)}&voiceId=${voiceId}`);
+      // Use our cached TTS API endpoint. The server owns provider selection and API keys.
+      const response = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
 
       if (!response.ok) {
         throw new Error('Failed to get audio');

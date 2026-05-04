@@ -1,12 +1,12 @@
 # 🎓 Vocab AI
 
-AI-powered vocabulary learning for grades 4–6 built with Next.js 16 (Cache Components), PostgreSQL (Prisma), Google Gemini, xAI Grok, and ElevenLabs.
+AI-powered vocabulary learning for grades 4–6 built with Next.js 16 (Cache Components), PostgreSQL (Prisma), Google Gemini, and xAI Grok.
 
 ## Features
 
 - 🤖 AI batch processing: paste raw word/definition text, generate structured lessons in one call
 - 🖼️ On-demand images: generate illustrations per example sentence when needed
-- 🔊 Text-to-speech with caching (ElevenLabs)
+- 🔊 Text-to-speech with caching (xAI TTS)
 - 🎴 Flashcards and 📊 mastery tracking (0–5)
 - 🎮 Multiple game modes with scoring and a weekly practice profile
 - 💾 Custom storage for audio/images served via API routes (production safe)
@@ -25,7 +25,7 @@ AI-powered vocabulary learning for grades 4–6 built with Next.js 16 (Cache Com
 
 - Bun 1.1+
 - PostgreSQL 18 (local or Docker)
-- API keys: Google Gemini, xAI Grok, ElevenLabs
+- API keys: Google Gemini and xAI Grok/TTS
 
 ## Getting Started
 
@@ -51,7 +51,9 @@ GROK_MODEL_ID=grok-4-fast                                # optional override
 GEMINI_TEXT_MODEL_ID=gemini-2.5-flash                    # optional override
 
 # TTS (audio)
-ELEVENLABS_API_KEY=your_elevenlabs_key
+# Uses XAI_API_KEY above. Optional overrides:
+XAI_TTS_VOICE_ID=ara
+XAI_TTS_LANGUAGE=en
 
 # Custom storage (absolute paths)
 VOCAB_IMAGES_DIR=/DATA/AppData/vocab-ai/vocab-sets
@@ -176,7 +178,7 @@ vocab-ai/
 │   │   │   ├── [id]/examples/[exampleId]/generate-image/route.ts  # On-demand image gen
 │   │   │   └── route.ts                              # List all vocab sets
 │   │   ├── images/vocab-sets/[...path]/route.ts      # Serve images from custom storage
-│   │   ├── tts/route.ts                              # ElevenLabs TTS with caching
+│   │   ├── tts/route.ts                              # xAI TTS with caching
 │   │   ├── audio/tts/[filename]/route.ts             # Serve cached TTS audio
 │   │   ├── games/profile/route.ts                    # Weekly profile
 │   │   ├── games/progress/route.ts                   # Game progress tracking
