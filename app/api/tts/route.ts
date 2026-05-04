@@ -1,8 +1,9 @@
-import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { NextRequest, NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 import { promises as fs } from "fs";
 import path from "path";
 import crypto from "crypto";
+import { generateXaiTtsAudio, normalizeXaiVoiceId } from "@/lib/xaiTts";
 
 const CACHE_DIR_ENV = process.env.TTS_CACHE_DIR;
 
@@ -25,7 +26,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const text = searchParams.get('text');
-    const voiceId = searchParams.get('voiceId') || '21m00Tcm4TlvDq8ikWAM';
+    const requestedVoiceId = searchParams.get('voiceId');
+    const voiceId = normalizeXaiVoiceId(requestedVoiceId);
 
     if (!text) {
       return NextResponse.json({ error: 'Text parameter is required' }, { status: 400 });
@@ -56,38 +58,18 @@ export async function GET(request: NextRequest) {
       // File doesn't exist, generate it
     }
 
-    // Generate audio with ElevenLabs
-    const elevenlabs = new ElevenLabsClient({
-      apiKey: process.env.ELEVENLABS_API_KEY
-    });
-
-    const audio = await elevenlabs.textToSpeech.convert(voiceId, {
-      text,
-      modelId: 'eleven_flash_v2_5',
-      outputFormat: 'mp3_44100_128',
-    });
-
-    // Convert stream to buffer
-    const reader = audio.getReader();
-    const chunks: Uint8Array[] = [];
-    let done = false;
-
-    while (!done) {
-      const { value, done: readerDone } = await reader.read();
-      done = readerDone;
-      if (value) chunks.push(value);
-    }
-
-    const buffer = Buffer.concat(chunks);
+    // Generate audio with xAI TTS
+    const buffer = await generateXaiTtsAudio(text, { voiceId });
 
     // Save to cache
-  await fs.writeFile(filePath, buffer);
+    await fs.writeFile(filePath, buffer);
 
     // Return URL reference to API route
     const audioUrl = `/api/audio/tts/${filename}`;
     return NextResponse.json({ url: audioUrl });
 
   } catch (error) {
+    unstable_rethrow(error);
     console.error('TTS API Error:', error);
     return NextResponse.json({ error: 'Failed to generate audio' }, { status: 500 });
   }

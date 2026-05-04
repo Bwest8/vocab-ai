@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     });
 
     // Invalidate vocab sets list cache
-    await revalidateTag(cacheTags.vocabSets);
+    revalidateTag(cacheTags.vocabSets, 'max');
 
     return NextResponse.json({
       success: true,
